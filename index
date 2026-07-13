@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firemní Generátor Návodů & Cloud Databáze</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .a4-preview { width: 210mm; min-height: 297mm; box-sizing: border-box; }
+        @media print {
+            body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
+            .no-print { display: none !important; }
+            .print-full-width { width: 100% !important; max-width: 100% !important; box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; }
+            .a4-preview { width: 100% !important; min-height: auto !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
+        }
+        /* Loader pro načítání databáze */
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+
+    <!-- PŘIHLAŠOVACÍ OBRAZOVKA (Simulace firemního loginu) -->
+    <div id="loginOverlay" class="no-print fixed inset-0 bg-slate-950 z-[100] flex items-center justify-center">
+        <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl max-w-md w-full text-center">
+            <div class="bg-indigo-600/20 text-indigo-400 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-white mb-2">Firemní Knowledge Base</h2>
+            <p class="text-sm text-slate-400 mb-6">Pro přístup do cloudové databáze zadejte své jméno. Váš přístup bude zaznamenán.</p>
+            
+            <input type="text" id="loginName" placeholder="Vaše jméno (např. Jan Novák)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500" onkeypress="if(event.key === 'Enter') window.loginUser()">
+            <button onclick="window.loginUser()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition">
+                Vstoupit do databáze
+            </button>
+            <div id="loginError" class="text-rose-400 text-xs mt-3 hidden">Prosím, zadejte své jméno.</div>
+        </div>
+    </div>
+
+    <!-- HLAVNÍ NAVIGACE -->
+    <header class="no-print bg-slate-800 border-b border-slate-700 sticky top-0 z-50 px-6 py-4 flex flex-wrap items-center justify-between gap-4 shadow-md">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 text-white p-2.5 rounded-lg shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                    KNOWLEDGE BASE <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-mono font-bold flex items-center gap-1"><div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div> CLOUD SYNC</span>
+                </h1>
+                <p class="text-xs text-slate-400">Přihlášen jako: <span id="currentUserDisplay" class="font-bold text-slate-200">...</span></p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button onclick="window.triggerPrint()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg text-sm font-semibold transition shadow-lg flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4" /></svg>
+                Uložit do PDF / Tisk
+            </button>
+        </div>
+    </header>
+
+    <!-- NOTIFIKACE -->
+    <div id="toast" class="no-print fixed bottom-5 right-5 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-2xl transition-all transform translate-y-20 opacity-0 z-50 flex items-center gap-3">
+        <span id="toastMessage">Návod byl uložen!</span>
+    </div>
+
+    <!-- HLAVNÍ OBSAH -->
+    <main class="print-full-width p-6 flex flex-col lg:flex-row gap-6 max-w-[1800px] mx-auto">
+        
+        <!-- LEVÝ PANEL -->
+        <section class="no-print w-full lg:w-[450px] shrink-0 flex flex-col gap-6">
+            
+            <div class="bg-slate-800 p-1.5 rounded-xl border border-slate-700 flex gap-1">
+                <button onclick="window.switchTab('edit')" id="tab-edit" class="flex-1 text-center py-2 text-sm font-semibold rounded-lg bg-indigo-600 text-white transition-all">
+                    Editor návodu
+                </button>
+                <button onclick="window.switchTab('db')" id="tab-db" class="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 transition-all">
+                    Cloud Databáze <span id="db-count" class="bg-slate-700 text-xs px-2 py-0.5 rounded-full">0</span>
+                </button>
+            </div>
+
+            <!-- TAB: EDITOR -->
+            <div id="panel-edit" class="bg-slate-800 rounded-2xl border border-slate-700 p-5 flex flex-col gap-5 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-white text-lg">Tvorba dokumentu</h3>
+                    <button onclick="window.clearForm()" class="text-xs text-rose-400 hover:text-rose-300">Vyčistit formulář</button>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Šablona</label>
+                    <select id="templateSelector" onchange="window.applyTemplate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200">
+                        <option value="custom">-- Vlastní / Prázdná --</option>
+                        <option value="sop">Technický návod / SOP</option>
+                        <option value="trouble">Řešení problému</option>
+                        <option value="tip">Rychlý tip</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="col-span-2">
+                        <label class="block text-xs text-slate-400 mb-1">Název návodu</label>
+                        <input type="text" id="docTitle" oninput="window.updatePreview()" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs text-slate-400 mb-1">Stručný popis / Cíl</label>
+                        <textarea id="docDesc" oninput="window.updatePreview()" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Kategorie</label>
+                        <input type="text" id="docCategory" oninput="window.updatePreview()" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Verze</label>
+                        <input type="text" id="docVersion" oninput="window.updatePreview()" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Kroky návodu</label>
+                        <button onclick="window.addStep()" class="bg-indigo-600/20 text-indigo-300 text-xs px-2 py-1 rounded border border-indigo-500/30">+ Přidat krok</button>
+                    </div>
+                    <div id="stepsContainer" class="flex flex-col gap-4 max-h-[350px] overflow-y-auto pr-1"></div>
+                </div>
+
+                <button onclick="window.saveToCloud()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l6-6a1 1 0 00-1.414-1.414L11 12.586l-3.293-3.293z" /><path d="M9 17a8 8 0 110-16 8 8 0 010 16zm0-2a6 6 0 100-12 6 6 0 000 12z" /></svg>
+                    Nahrát do Cloudové Databáze
+                </button>
+            </div>
+
+            <!-- TAB: DATABÁZE -->
+            <div id="panel-db" class="hidden bg-slate-800 rounded-2xl border border-slate-700 p-5 flex flex-col gap-4 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-white text-lg">Sdílené návody týmu</h3>
+                    <div id="cloudStatus" class="flex items-center gap-2 text-xs text-emerald-400">
+                        <div class="loader" style="width: 12px; height: 12px; border-width: 2px;"></div> Načítání...
+                    </div>
+                </div>
+
+                <input type="text" id="dbSearch" oninput="window.renderDatabaseList()" placeholder="Hledat..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white">
+
+                <div id="dbListContainer" class="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-1">
+                    <!-- Data z cloudu -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- PRAVÝ PANEL: A4 NÁHLED -->
+        <section class="print-full-width flex-1 flex justify-center">
+            <div id="a4Paper" class="a4-preview bg-white text-slate-900 p-12 md:p-16 shadow-2xl border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <div class="border-b-4 border-indigo-600 pb-5 mb-8 flex justify-between">
+                        <div>
+                            <span id="pCategory" class="text-xs font-extrabold uppercase text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Kategorie</span>
+                            <h2 id="pTitle" class="text-3xl font-black text-slate-950 mt-3 leading-tight">Název návodu</h2>
+                            <p id="pDesc" class="text-sm text-slate-600 mt-2 italic">Krátká anotace.</p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <div class="text-indigo-600 font-black text-lg mb-2">[KNOWLEDGE BASE]</div>
+                            <div class="text-[10px] text-slate-400 font-mono">
+                                <div>VERZE: <span id="pVersion" class="font-bold text-slate-700">1.0</span></div>
+                                <div>DATUM: <span id="pDate" class="font-bold text-slate-700"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="pContent" class="space-y-6"></div>
+                </div>
+                <div class="border-t border-slate-200 pt-6 mt-12 text-[10px] text-slate-400 font-mono flex justify-between">
+                    <div>AUTOR: <span id="pAuthor" class="font-bold text-slate-600"></span></div>
+                    <div class="text-emerald-600 font-bold">SCHVÁLENÝ BLUEPRINT</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FIREBASE & LOGIKA APLIKACE (Jako JS Modul) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase konfigurace (V ostrém provozu na GitHubu zde vložíte vlastní klíče z Firebase Console)
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { projectId: "demo-kb" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'firemni-kb-app';
+
+        let cloudGuides = [];
+        let steps = [];
+        let loggedInUserName = "";
+
+        // --- AUTHENTIFIKACE A SPOJENÍ S DATABÁZÍ ---
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch(e) { console.error("Auth error", e); }
+        };
+        initAuth();
+
+        // Jakmile je ověřeno, začneme naslouchat změnám v databázi
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                const guidesRef = collection(db, 'artifacts', appId, 'public', 'data', 'guides');
+                
+                // onSnapshot nám zajistí, že se seznam návodů aktualizuje každému v reálném čase
+                onSnapshot(guidesRef, (snapshot) => {
+                    cloudGuides = [];
+                    snapshot.forEach((doc) => {
+                        cloudGuides.push({ id: doc.id, ...doc.data() });
+                    });
+                    document.getElementById('cloudStatus').innerHTML = `● Živě synchronizováno`;
+                    document.getElementById('db-count').innerText = cloudGuides.length;
+                    window.renderDatabaseList();
+                }, (error) => {
+                    console.error("Chyba čtení databáze:", error);
+                    document.getElementById('cloudStatus').innerHTML = `<span class="text-rose-400">Odmítnutý přístup</span>`;
+                });
+            }
+        });
+
+        // --- UŽIVATELSKÉ FUNKCE (Exportované do window pro HTML onclick) ---
+
+        // Zpracování přihlášení
+        window.loginUser = async () => {
+            const nameInput = document.getElementById('loginName').value.trim();
+            if(!nameInput) {
+                document.getElementById('loginError').classList.remove('hidden');
+                return;
+            }
+            loggedInUserName = nameInput;
+            document.getElementById('currentUserDisplay').innerText = nameInput;
+            document.getElementById('docAuthor').value = nameInput;
+            
+            // Schováme překryv login obrazovky
+            document.getElementById('loginOverlay').style.display = 'none';
+            window.updatePreview();
+
+            // Zapíšeme log do cloudu (Vidíte, kdo se přihlásil)
+            if(auth.currentUser) {
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'logs'), {
+                        userName: loggedInUserName,
+                        action: 'login',
+                        timestamp: serverTimestamp()
+                    });
+                } catch(e) { console.error("Chyba při zápisu logu", e); }
+            }
+        };
+
+        window.switchTab = (tab) => {
+            const btnEdit = document.getElementById('tab-edit');
+            const btnDb = document.getElementById('tab-db');
+            const panelEdit = document.getElementById('panel-edit');
+            const panelDb = document.getElementById('panel-db');
+
+            if (tab === 'edit') {
+                btnEdit.className = "flex-1 text-center py-2 text-sm font-semibold rounded-lg bg-indigo-600 text-white";
+                btnDb.className = "flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50";
+                panelEdit.classList.remove('hidden');
+                panelDb.classList.add('hidden');
+            } else {
+                btnDb.className = "flex-1 flex items-center justify-center gap-2 py-2 text-sm font-semibold rounded-lg bg-indigo-600 text-white";
+                btnEdit.className = "flex-1 text-center py-2 text-sm font-semibold rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50";
+                panelDb.classList.remove('hidden');
+                panelEdit.classList.add('hidden');
+            }
+        };
+
+        window.clearForm = () => {
+            document.getElementById('docTitle').value = "";
+            document.getElementById('docTitle').removeAttribute('data-editing-id');
+            document.getElementById('docDesc').value = "";
+            document.getElementById('docCategory').value = "Interní";
+            document.getElementById('docVersion').value = "v1.0";
+            document.getElementById('templateSelector').value = "custom";
+            steps = [];
+            window.renderStepsEditor();
+            window.updatePreview();
+        };
+
+        window.applyTemplate = () => {
+            const selected = document.getElementById('templateSelector').value;
+            if (selected === 'sop') {
+                document.getElementById('docTitle').value = "SOP: Název postupu";
+                document.getElementById('docDesc').value = "Standardní postup...";
+                document.getElementById('docCategory').value = "Metodika";
+                steps = [
+                    { title: "Příprava", content: "Co připravit...", code: "" },
+                    { title: "Postup", content: "Kroky...", code: "" }
+                ];
+            } else if (selected === 'trouble') {
+                document.getElementById('docTitle').value = "Oprava: Název chyby";
+                document.getElementById('docCategory').value = "Troubleshooting";
+                steps = [{ title: "Diagnostika", content: "", code: "" }, { title: "Řešení", content: "", code: "" }];
+            }
+            window.renderStepsEditor();
+            window.updatePreview();
+        };
+
+        window.renderStepsEditor = () => {
+            const container = document.getElementById('stepsContainer');
+            container.innerHTML = "";
+            steps.forEach((step, index) => {
+                container.innerHTML += `
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 relative">
+                        <button onclick="window.removeStep(${index})" class="absolute top-3 right-3 text-rose-500 text-xs font-bold">Odstranit</button>
+                        <div class="text-xs font-bold text-indigo-400 mb-1">KROK #${index + 1}</div>
+                        <input type="text" value="${step.title}" oninput="window.updateStepData(${index}, 'title', this.value)" placeholder="Nadpis" class="w-full bg-slate-800 border-slate-700 rounded px-2 py-1 text-xs text-white mb-2">
+                        <textarea oninput="window.updateStepData(${index}, 'content', this.value)" rows="3" placeholder="Popis..." class="w-full bg-slate-800 border-slate-700 rounded px-2 py-1 text-xs text-white mb-2">${step.content}</textarea>
+                        <textarea oninput="window.updateStepData(${index}, 'code', this.value)" rows="1" placeholder="Volitelný kód" class="w-full bg-slate-800 border-slate-700 rounded px-2 py-1 text-[11px] font-mono text-emerald-300">${step.code || ""}</textarea>
+                    </div>`;
+            });
+        };
+
+        window.addStep = () => { steps.push({ title: "Nový krok", content: "", code: "" }); window.renderStepsEditor(); window.updatePreview(); };
+        window.removeStep = (i) => { steps.splice(i, 1); window.renderStepsEditor(); window.updatePreview(); };
+        window.updateStepData = (i, k, v) => { steps[i][k] = v; window.updatePreview(); };
+
+        window.updatePreview = () => {
+            document.getElementById('pTitle').innerText = document.getElementById('docTitle').value || "Bez názvu";
+            document.getElementById('pDesc').innerText = document.getElementById('docDesc').value || "...";
+            document.getElementById('pCategory').innerText = document.getElementById('docCategory').value || "Kategorie";
+            document.getElementById('pVersion').innerText = document.getElementById('docVersion').value || "1.0";
+            document.getElementById('pAuthor').innerText = document.getElementById('docAuthor').value || "Nezadáno";
+            
+            const today = new Date().toISOString().split('T')[0].split('-');
+            document.getElementById('pDate').innerText = `${today[2]}/${today[1]}/${today[0]}`;
+
+            const contentContainer = document.getElementById('pContent');
+            contentContainer.innerHTML = steps.map(step => `
+                <div class="border-l-2 border-indigo-200 pl-4 py-1">
+                    <h4 class="font-bold text-slate-900">${step.title}</h4>
+                    <p class="text-sm text-slate-700 mt-1">${step.content.replace(/\n/g, "<br>")}</p>
+                    ${step.code ? `<pre class="bg-slate-50 border border-slate-200 rounded p-3 text-[11px] font-mono text-indigo-900 mt-2">${step.code.replace(/</g, "&lt;")}</pre>` : ''}
+                </div>
+            `).join('');
+        };
+
+        window.triggerPrint = () => window.print();
+
+        const showToast = (msg) => {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = msg;
+            t.classList.replace('translate-y-20', 'translate-y-0'); t.classList.replace('opacity-0', 'opacity-100');
+            setTimeout(() => { t.classList.replace('translate-y-0', 'translate-y-20'); t.classList.replace('opacity-100', 'opacity-0'); }, 3000);
+        };
+
+        // --- ZÁPIS DO CLOUDU (FIRESTORE) ---
+        window.saveToCloud = async () => {
+            if (!auth.currentUser) return showToast("Nejste přihlášeni do cloudu.");
+            
+            const title = document.getElementById('docTitle').value;
+            if (!title) return showToast("Chyba: Návod musí mít název!");
+
+            // Existující ID nebo vygenerujeme nové unikátní
+            const docId = document.getElementById('docTitle').getAttribute('data-editing-id') || 'guide_' + Date.now();
+            
+            const guideData = {
+                title: title,
+                desc: document.getElementById('docDesc').value,
+                category: document.getElementById('docCategory').value,
+                version: document.getElementById('docVersion').value,
+                author: document.getElementById('docAuthor').value,
+                steps: steps,
+                updatedAt: serverTimestamp(),
+                lastEditor: loggedInUserName
+            };
+
+            try {
+                // Zapíše/přepíše dokument v kolekci "guides"
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'guides', docId), guideData);
+                document.getElementById('docTitle').setAttribute('data-editing-id', docId);
+                showToast("Uloženo do firemního cloudu!");
+            } catch (error) {
+                console.error("Chyba ukládání", error);
+                showToast("Chyba při ukládání do cloudu.");
+            }
+        };
+
+        // --- ČTENÍ A SPRÁVA CLOUD DAT ---
+        window.renderDatabaseList = () => {
+            const searchVal = document.getElementById('dbSearch').value.toLowerCase();
+            const container = document.getElementById('dbListContainer');
+            container.innerHTML = "";
+
+            const filtered = cloudGuides.filter(i => (i.title||'').toLowerCase().includes(searchVal) || (i.category||'').toLowerCase().includes(searchVal));
+
+            if(filtered.length === 0) {
+                container.innerHTML = `<div class="text-center py-5 text-slate-500 text-sm">Nic nenalezeno.</div>`; return;
+            }
+
+            filtered.forEach(item => {
+                container.innerHTML += `
+                    <div class="bg-slate-900/50 hover:bg-slate-700/30 p-3.5 rounded-xl border border-slate-700/50 flex justify-between items-start gap-4 transition">
+                        <div class="flex-1 cursor-pointer min-w-0" onclick="window.loadFromCloud('${item.id}')">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[9px] font-extrabold uppercase bg-indigo-500/15 text-indigo-400 px-1.5 py-0.5 rounded">${item.category || 'N/A'}</span>
+                                <span class="text-[10px] text-slate-500">${item.author || 'Neznámý autor'}</span>
+                            </div>
+                            <h4 class="text-sm font-bold text-white truncate">${item.title}</h4>
+                            <p class="text-xs text-slate-400 truncate mt-0.5">${item.desc || ''}</p>
+                        </div>
+                        <button onclick="window.deleteFromCloud('${item.id}')" class="text-slate-500 hover:text-rose-400 p-1.5 shrink-0">
+                           Odstranit
+                        </button>
+                    </div>`;
+            });
+        };
+
+        window.loadFromCloud = (id) => {
+            const doc = cloudGuides.find(i => i.id === id);
+            if(!doc) return;
+            document.getElementById('docTitle').value = doc.title;
+            document.getElementById('docTitle').setAttribute('data-editing-id', id);
+            document.getElementById('docDesc').value = doc.desc || "";
+            document.getElementById('docCategory').value = doc.category || "";
+            document.getElementById('docVersion').value = doc.version || "1.0";
+            document.getElementById('docAuthor').value = doc.author || "";
+            steps = JSON.parse(JSON.stringify(doc.steps || []));
+            
+            window.renderStepsEditor();
+            window.updatePreview();
+            window.switchTab('edit');
+            showToast("Staženo z cloudu a připraveno k úpravě.");
+        };
+
+        window.deleteFromCloud = async (id) => {
+            if(!auth.currentUser) return;
+            if (confirm("Skutečně smazat tento návod VŠEM ve firmě?")) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'guides', id));
+                    
+                    if(document.getElementById('docTitle').getAttribute('data-editing-id') === id) window.clearForm();
+                    showToast("Smazáno z cloudu.");
+                } catch(e) { console.error("Chyba mazání", e); }
+            }
+        };
+
+        // Výchozí prázdná inicializace při načtení
+        window.clearForm();
+        document.getElementById('docAuthor').value = "Zadejte jméno...";
+    </script>
+</body>
+</html>
