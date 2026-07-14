@@ -166,24 +166,27 @@
         <section class="print-full-width flex-1 flex justify-center">
             <div id="a4Paper" class="a4-preview bg-white text-slate-900 p-12 md:p-16 shadow-2xl border border-slate-200 flex flex-col justify-between">
                 <div>
-                    <div class="border-b-4 border-indigo-600 pb-5 mb-8 flex justify-between">
+                    <div class="border-b-4 border-indigo-600 pb-5 mb-8 flex justify-between items-start">
                         <div>
                             <span id="pCategory" class="text-xs font-extrabold uppercase text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Kategorie</span>
                             <h2 id="pTitle" class="text-3xl font-black text-slate-950 mt-3 leading-tight">Název návodu</h2>
                             <p id="pDesc" class="text-sm text-slate-600 mt-2 italic">Krátká anotace.</p>
                         </div>
-                        <div class="text-right shrink-0">
-                            <div class="text-indigo-600 font-black text-lg mb-2">[KNOWLEDGE BASE]</div>
-                            <div class="text-[10px] text-slate-400 font-mono">
-                                <div>VERZE: <span id="pVersion" class="font-bold text-slate-700">1.0</span></div>
-                                <div>DATUM: <span id="pDate" class="font-bold text-slate-700"></span></div>
-                            </div>
+                        <div class="text-right shrink-0 flex flex-col items-end gap-2">
+                            <img src="Pasport_Kana_black.png" alt="Logo Pasport Kaňa" class="h-8 object-contain">
+                            <div class="text-slate-500 font-bold text-xs uppercase tracking-widest">Firemní manuál</div>
                         </div>
                     </div>
                     <div id="pContent" class="space-y-6"></div>
                 </div>
-                <div class="border-t border-slate-200 pt-6 mt-12 text-[10px] text-slate-400 font-mono flex justify-end">
-                    <div>AUTOR: <span id="pAuthor" class="font-bold text-slate-600"></span></div>
+                <div class="border-t border-slate-200 pt-6 mt-12 text-[10px] text-slate-400 font-mono flex justify-between items-end">
+                    <div class="text-left">
+                        <div>VERZE: <span id="pVersion" class="font-bold text-slate-700">1.0</span></div>
+                        <div>DATUM: <span id="pDate" class="font-bold text-slate-700"></span></div>
+                    </div>
+                    <div class="text-right">
+                        <div>AUTOR: <span id="pAuthor" class="font-bold text-slate-600"></span></div>
+                    </div>
                 </div>
             </div>
         </section>
