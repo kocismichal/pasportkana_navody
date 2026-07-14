@@ -365,19 +365,26 @@
             const element = document.getElementById('a4Paper');
             const footerElem = document.getElementById('pdfFooterHide');
             
-            // Dočasně skryjeme HTML patičku (vykreslíme ji pak dynamicky na každou stranu i s číslováním)
+            // 1. Skryjeme patičku v HTML, aby se netiskla 2x (dokreslíme ji dynamicky na každou stranu)
             if(footerElem) footerElem.style.display = 'none';
 
-            // Nastavení pro html2pdf (25mm horní a 22mm spodní okraj)
+            // 2. ODSTRANĚNÍ ŠEDÝCH ARTEFAKTŮ A POSUNU NA PRVNÍ STRANĚ
+            // Uložíme si původní vzhled papíru z webu
+            const originalClasses = element.className;
+            // Před focením do PDF vypneme stíny, rámečky a svislé vnitřní odsazení
+            element.classList.remove('shadow-2xl', 'border', 'border-slate-200', 'py-8', 'md:py-10');
+            // Zabráníme zbytečnému posunu textu dolů na první straně
+            element.classList.add('py-0');
+
             const opt = {
-                margin:       [25, 0, 22, 0], 
+                margin:       [25, 0, 22, 0], // Nahoře 25mm na hlavičku, dole 22mm na patičku
                 filename:     (document.getElementById('docTitle').value || 'Firemni_Navod') + '.pdf',
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } // Ochrana proti přeříznutí textu napůl
             };
 
-            // Pomocná funkce pro odstranění diakritiky
             const strip = (s) => (s||'').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
             html2pdf().from(element).set(opt).toPdf().get('pdf').then(function (pdf) {
@@ -385,65 +392,58 @@
                 const pageWidth = pdf.internal.pageSize.getWidth();
                 const pageHeight = pdf.internal.pageSize.getHeight();
                 
-                // Načtení dat pro hlavičku/patičku z dokumentu
+                // Načtení dat
                 const cat = strip(document.getElementById('pCategory').innerText);
                 const title = strip(document.getElementById('pTitle').innerText);
                 const ver = strip(document.getElementById('pVersion').innerText);
                 const date = strip(document.getElementById('pDate').innerText);
                 const author = strip(document.getElementById('pAuthor').innerText);
-
-                // Načteme černé logo ze stránky
                 const logoEl = document.querySelector('img[alt="Logo Pasport Kaňa"]');
 
-                // Projdeme všechny vygenerované stránky a dokreslíme hlavičky a patičky
                 for (let i = 1; i <= totalPages; i++) {
                     pdf.setPage(i);
                     
-                    // --- PATIČKA NA KAŽDÉ STRANĚ (Včetně číslování) ---
-                    pdf.setDrawColor(226, 232, 240); // Světle šedá čára
+                    // --- ZÁPATÍ (Na každé straně dole) ---
+                    pdf.setDrawColor(226, 232, 240);
                     pdf.line(15, pageHeight - 18, pageWidth - 15, pageHeight - 18);
                     
                     pdf.setFontSize(8);
-                    pdf.setTextColor(148, 163, 184); // Barva textu
+                    pdf.setTextColor(148, 163, 184);
                     
-                    // Datum a Verze vlevo na dvou řádcích
                     pdf.text(`DATUM: ${date}`, 15, pageHeight - 13);
                     pdf.text(`VERZE: ${ver}`, 15, pageHeight - 9);
                     
-                    // Autor a Strana vpravo na dvou řádcích
                     pdf.text(`AUTOR: ${author}`, pageWidth - 15, pageHeight - 13, { align: 'right' });
                     pdf.text(`STRANA: ${i}/${totalPages}`, pageWidth - 15, pageHeight - 9, { align: 'right' });
 
-                    // --- ZÁHLAVÍ NA 2. A DALŠÍ STRANĚ ---
+                    // --- ZÁHLAVÍ (Pouze od 2. strany) ---
                     if (i > 1) {
-                        pdf.setDrawColor(79, 70, 229); // Modrá fialová čára
+                        pdf.setDrawColor(79, 70, 229);
                         pdf.setLineWidth(1);
                         pdf.line(15, 20, pageWidth - 15, 20);
 
-                        // Kategorie vlevo
                         pdf.setFontSize(9);
                         pdf.setFont('helvetica', 'bold');
                         pdf.setTextColor(79, 70, 229);
                         pdf.text(cat.toUpperCase(), 15, 17);
 
-                        // Název návodu zarovnaný vpravo (vedle loga)
+                        // Název zarovnaný doprava k logu
                         pdf.setFontSize(10);
                         pdf.setFont('helvetica', 'normal');
                         pdf.setTextColor(15, 23, 42);
-                        // Zarovnáme text vpravo tak, aby končil před logem (šířka loga je 30, okraj je 15 = 45. Dámo to na 50)
                         pdf.text(title, pageWidth - 50, 17, { align: 'right' }); 
 
-                        // Vložení černého loga vpravo nahoře
                         if (logoEl && logoEl.src) {
                             try {
                                 pdf.addImage(logoEl.src, 'PNG', pageWidth - 45, 8, 30, 10);
-                            } catch(e) { console.warn('Chyba vložení loga', e); }
+                            } catch(e) {}
                         }
                     }
                 }
             }).save().then(() => {
-                // Vrátíme HTML patičku zpět, aby byla vidět na webu
-                if(footerElem) footerElem.style.display = 'flex';
+                // 3. NÁVRAT DO PŮVODNÍHO STAVU V PROHLÍŽEČI
+                if(footerElem) footerElem.style.display = 'flex'; // Ukážeme zápatí
+                element.className = originalClasses; // Vrátíme stíny a mezery
                 window.showToast("PDF bylo úspěšně staženo!");
             });
         };
