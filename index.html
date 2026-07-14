@@ -179,31 +179,35 @@
                 
                 <img src="Pasport_Kana_gray.png" alt="Vodoznak" class="absolute inset-0 m-auto w-[60%] opacity-[0.25] pointer-events-none z-0 print-watermark">
 
-                <div class="relative z-10">
+                <div class="relative z-10 flex-1">
                     
-                    <div class="border-b-4 border-indigo-600 pb-5 mb-8 flex justify-between items-center">
-                        <div>
+                    <div class="border-b-4 border-indigo-600 pb-5 mb-8 flex justify-between items-start gap-4">
+                        <div class="flex-none">
                             <span id="pCategory" class="text-xs font-extrabold uppercase text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Kategorie</span>
-                            <h2 id="pTitle" class="text-3xl font-black text-slate-950 mt-3 leading-tight">Název návodu</h2>
+                        </div>
+                        
+                        <div class="flex-1 text-right mt-1 pr-4 border-r-2 border-slate-100">
+                            <h2 id="pTitle" class="text-3xl font-black text-slate-950 leading-tight">Název návodu</h2>
                             <p id="pDesc" class="text-sm text-slate-600 mt-2 italic">Krátká anotace.</p>
                         </div>
-                        <div class="text-right shrink-0 flex flex-col items-end gap-1">
-                            <img src="Pasport_Kana_black.png" alt="Logo Pasport Kaňa" class="h-24 object-contain">
-                            <div class="text-slate-500 font-bold text-sm uppercase tracking-widest">Firemní manuál</div>
+
+                        <div class="text-right shrink-0 flex flex-col items-center gap-1 w-[120px]">
+                            <img src="Pasport_Kana_black.png" alt="Logo Pasport Kaňa" class="h-16 object-contain">
+                            <div class="text-slate-500 font-bold text-[10px] uppercase tracking-widest text-center">Firemní manuál</div>
                         </div>
                     </div>
                     
                     <div id="pContent" class="space-y-6"></div>
                 </div>
 
-                <div class="border-t border-slate-200 pt-3 mt-6 text-[10px] text-slate-400 font-mono flex justify-between items-end relative z-10">
-                    <div id="pdfFooterHide" class="border-t border-slate-200 pt-3 mt-6 text-[10px] text-slate-400 font-mono flex justify-between items-end relative z-10">
-                    <div class="text-left">
-                        <div>VERZE: <span id="pVersion" class="font-bold text-slate-700">1.0</span></div>
+                <div id="pdfFooterHide" class="border-t border-slate-200 pt-3 mt-8 text-[10px] text-slate-400 font-mono flex justify-between items-end relative z-10 w-full bg-white">
+                    <div class="text-left flex flex-col gap-1">
                         <div>DATUM: <span id="pDate" class="font-bold text-slate-700"></span></div>
+                        <div>VERZE: <span id="pVersion" class="font-bold text-slate-700">1.0</span></div>
                     </div>
-                    <div class="text-right">
+                    <div class="text-right flex flex-col gap-1 items-end">
                         <div>AUTOR: <span id="pAuthor" class="font-bold text-slate-600"></span></div>
+                        <div>STRANA: <span class="font-bold text-slate-700">1/1</span></div>
                     </div>
                 </div>
                 
@@ -365,24 +369,23 @@
             const element = document.getElementById('a4Paper');
             const footerElem = document.getElementById('pdfFooterHide');
             
-            // 1. Skryjeme patičku v HTML, aby se netiskla 2x (dokreslíme ji dynamicky na každou stranu)
+            // Dočasně skryjeme patičku pro PDF export
             if(footerElem) footerElem.style.display = 'none';
 
-            // 2. ODSTRANĚNÍ ŠEDÝCH ARTEFAKTŮ A POSUNU NA PRVNÍ STRANĚ
-            // Uložíme si původní vzhled papíru z webu
             const originalClasses = element.className;
-            // Před focením do PDF vypneme stíny, rámečky a svislé vnitřní odsazení
+            // Odstraníme stíny a velké webové okraje z náhledu
             element.classList.remove('shadow-2xl', 'border', 'border-slate-200', 'py-8', 'md:py-10');
-            // Zabráníme zbytečnému posunu textu dolů na první straně
+            // Zamezíme zbytečné mezeře nahoře přidáním nulového paddingu
             element.classList.add('py-0');
 
+            // OPRAVA MEZERY: Horní margin snížen na 18, aby 1. strana nevisela zbytečně nízko
             const opt = {
-                margin:       [25, 0, 22, 0], // Nahoře 25mm na hlavičku, dole 22mm na patičku
+                margin:       [18, 0, 20, 0], 
                 filename:     (document.getElementById('docTitle').value || 'Firemni_Navod') + '.pdf',
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] } // Ochrana proti přeříznutí textu napůl
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
             };
 
             const strip = (s) => (s||'').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -392,7 +395,6 @@
                 const pageWidth = pdf.internal.pageSize.getWidth();
                 const pageHeight = pdf.internal.pageSize.getHeight();
                 
-                // Načtení dat
                 const cat = strip(document.getElementById('pCategory').innerText);
                 const title = strip(document.getElementById('pTitle').innerText);
                 const ver = strip(document.getElementById('pVersion').innerText);
@@ -403,7 +405,7 @@
                 for (let i = 1; i <= totalPages; i++) {
                     pdf.setPage(i);
                     
-                    // --- ZÁPATÍ (Na každé straně dole) ---
+                    // --- ZÁPATÍ ---
                     pdf.setDrawColor(226, 232, 240);
                     pdf.line(15, pageHeight - 18, pageWidth - 15, pageHeight - 18);
                     
@@ -416,34 +418,33 @@
                     pdf.text(`AUTOR: ${author}`, pageWidth - 15, pageHeight - 13, { align: 'right' });
                     pdf.text(`STRANA: ${i}/${totalPages}`, pageWidth - 15, pageHeight - 9, { align: 'right' });
 
-                    // --- ZÁHLAVÍ (Pouze od 2. strany) ---
+                    // --- ZÁHLAVÍ (od 2. strany) ---
+                    // Nyní se kreslí výše do oné 18mm mezery, aby se nepřekrývalo s textem
                     if (i > 1) {
                         pdf.setDrawColor(79, 70, 229);
                         pdf.setLineWidth(1);
-                        pdf.line(15, 20, pageWidth - 15, 20);
+                        pdf.line(15, 16, pageWidth - 15, 16);
 
                         pdf.setFontSize(9);
                         pdf.setFont('helvetica', 'bold');
                         pdf.setTextColor(79, 70, 229);
-                        pdf.text(cat.toUpperCase(), 15, 17);
+                        pdf.text(cat.toUpperCase(), 15, 13);
 
-                        // Název zarovnaný doprava k logu
                         pdf.setFontSize(10);
                         pdf.setFont('helvetica', 'normal');
                         pdf.setTextColor(15, 23, 42);
-                        pdf.text(title, pageWidth - 50, 17, { align: 'right' }); 
+                        pdf.text(title, pageWidth - 50, 13, { align: 'right' }); 
 
                         if (logoEl && logoEl.src) {
                             try {
-                                pdf.addImage(logoEl.src, 'PNG', pageWidth - 45, 8, 30, 10);
+                                pdf.addImage(logoEl.src, 'PNG', pageWidth - 45, 6, 30, 9);
                             } catch(e) {}
                         }
                     }
                 }
             }).save().then(() => {
-                // 3. NÁVRAT DO PŮVODNÍHO STAVU V PROHLÍŽEČI
-                if(footerElem) footerElem.style.display = 'flex'; // Ukážeme zápatí
-                element.className = originalClasses; // Vrátíme stíny a mezery
+                if(footerElem) footerElem.style.display = 'flex';
+                element.className = originalClasses;
                 window.showToast("PDF bylo úspěšně staženo!");
             });
         };
