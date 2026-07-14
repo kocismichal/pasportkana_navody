@@ -52,10 +52,6 @@
         </div>
         
         <div class="flex items-center gap-3">
-            <!-- Tlačítko z personalizace -->
-            <button onclick="window.vyhodnotZimniPripravu()" class="bg-indigo-500 hover:bg-indigo-400 text-white px-3 py-2 rounded-lg text-xs font-semibold transition border border-indigo-400">
-                Vyhodnoť zimní přípravu
-            </button>
             <button onclick="window.triggerPrint()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg text-sm font-semibold transition shadow-lg flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4" /></svg>
                 Uložit do PDF / Tisk
@@ -142,8 +138,14 @@
             <div id="panel-db" class="hidden bg-slate-800 rounded-2xl border border-slate-700 p-5 flex flex-col gap-4 shadow-lg">
                 <div class="flex items-center justify-between">
                     <h3 class="font-bold text-white text-lg">Sdílené návody týmu</h3>
-                    <div id="cloudStatus" class="flex items-center gap-2 text-xs text-emerald-400">
-                        <div class="loader" style="width: 12px; height: 12px; border-width: 2px;"></div> Načítání...
+                    <div class="flex items-center gap-3">
+                        <button onclick="window.openAiImport()" class="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-xs px-3 py-1.5 rounded border border-indigo-500/30 transition flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            Nahrát návod od AI
+                        </button>
+                        <div id="cloudStatus" class="flex items-center gap-2 text-xs text-emerald-400">
+                            <div class="loader" style="width: 12px; height: 12px; border-width: 2px;"></div> Načítání...
+                        </div>
                     </div>
                 </div>
 
@@ -183,6 +185,19 @@
             </div>
         </section>
     </main>
+
+    <!-- MODÁLNÍ OKNO PRO IMPORT Z AI -->
+    <div id="aiImportOverlay" class="no-print fixed inset-0 bg-slate-950/80 z-[110] hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-2xl max-w-2xl w-full flex flex-col gap-4">
+            <h3 class="text-xl font-bold text-white">Importovat návod od AI</h3>
+            <p class="text-sm text-slate-400">Sem vložte speciální datový kód, který vám vygenerovala umělá inteligence.</p>
+            <textarea id="aiImportText" rows="12" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-sm font-mono text-emerald-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Zde vložte zkopírovaný text..."></textarea>
+            <div class="flex justify-end gap-3 mt-2">
+                <button onclick="window.closeAiImport()" class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-700 transition">Zrušit</button>
+                <button onclick="window.processAiImport()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg text-sm font-bold transition shadow-lg">Zpracovat a uložit do cloudu</button>
+            </div>
+        </div>
+    </div>
 
     <!-- ZÁKLADNÍ LOGIKA APLIKACE -->
     <script>
@@ -316,6 +331,15 @@
 
         window.triggerPrint = () => window.print();
 
+        window.openAiImport = () => {
+            document.getElementById('aiImportOverlay').classList.remove('hidden');
+        };
+
+        window.closeAiImport = () => {
+            document.getElementById('aiImportOverlay').classList.add('hidden');
+            document.getElementById('aiImportText').value = '';
+        };
+
         window.showToast = (msg) => {
             const t = document.getElementById('toast');
             document.getElementById('toastMessage').innerText = msg;
@@ -357,6 +381,7 @@
         window.saveToCloud = async () => { window.showToast("Aplikace běží v Offline módu. (Nelze ukládat)"); };
         window.loadFromCloud = (id) => { window.showToast("Aplikace běží v Offline módu."); };
         window.deleteFromCloud = async (id) => { window.showToast("Aplikace běží v Offline módu."); };
+        window.processAiImport = async () => { window.showToast("Aplikace běží v Offline módu."); };
 
         // Inicializace při prvním spuštění
         document.addEventListener('DOMContentLoaded', () => {
@@ -466,6 +491,40 @@
                         if(document.getElementById('docTitle').getAttribute('data-editing-id') === id) window.clearForm();
                         window.showToast("Smazáno z cloudu.");
                     } catch(e) { console.error("Chyba mazání", e); }
+                }
+            };
+
+            // Zpracování importu od AI
+            window.processAiImport = async () => {
+                if (!auth || !auth.currentUser || !db) return window.showToast("Chyba: Nejste přihlášeni do cloudu.");
+                
+                const text = document.getElementById('aiImportText').value.trim();
+                if (!text) return window.showToast("Vložte kód od AI.");
+
+                try {
+                    const parsed = JSON.parse(text);
+                    const guides = Array.isArray(parsed) ? parsed : [parsed];
+                    
+                    for (const guide of guides) {
+                        const docId = 'guide_ai_' + Date.now() + Math.floor(Math.random() * 1000);
+                        const guideData = {
+                            title: guide.title || "Importovaný návod od AI",
+                            desc: guide.desc || "",
+                            category: guide.category || "AI Import",
+                            version: guide.version || "1.0",
+                            author: guide.author || window.loggedInUserName,
+                            steps: guide.steps || [],
+                            updatedAt: serverTimestamp(),
+                            lastEditor: window.loggedInUserName
+                        };
+                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'guides', docId), guideData);
+                    }
+                    
+                    window.closeAiImport();
+                    window.showToast("Návody od AI byly nahrány do databáze!");
+                } catch (error) {
+                    console.error("Chyba importu AI", error);
+                    alert("Nepodařilo se zpracovat kód. Zkontrolujte, zda jste ho zkopírovali správně celý od první do poslední závorky.");
                 }
             };
 
