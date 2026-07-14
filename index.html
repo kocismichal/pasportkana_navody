@@ -5,13 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pasport Kaňa - Firemní návody</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         .a4-preview { width: 210mm; min-height: 297mm; box-sizing: border-box; }
         @media print {
+            @page { margin: 0; size: A4; }
             body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
             .no-print { display: none !important; }
             .print-full-width { width: 100% !important; max-width: 100% !important; box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; }
-            .a4-preview { width: 100% !important; min-height: auto !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
+            .a4-preview { width: 100% !important; min-height: auto !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; }
+            
+            /* NOVÝ TRIK PRO OPAKOVÁNÍ VODOZNAKU NA KAŽDÉ STRANĚ */
+            .print-watermark {
+                position: fixed !important;
+                top: 50% !important;
+                left: 50% !important;
+                transform: translate(-50%, -50%) !important;
+            }
         }
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -70,7 +81,7 @@
 
     <main class="print-full-width p-6 flex flex-col lg:flex-row gap-6 max-w-[1800px] mx-auto">
         
-        <section class="no-print w-full lg:w-[450px] shrink-0 flex flex-col gap-6">
+        <section class="no-print w-full lg:w-[550px] shrink-0 flex flex-col gap-6">
             
             <div class="bg-slate-800 p-1.5 rounded-xl border border-slate-700 flex gap-1">
                 <button onclick="window.switchTab('edit')" id="tab-edit" class="flex-1 text-center py-2 text-sm font-semibold rounded-lg bg-indigo-600 text-white transition-all">
@@ -125,7 +136,7 @@
                         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Kroky návodu</label>
                         <button onclick="window.addStep()" class="bg-indigo-600/20 text-indigo-300 text-xs px-2 py-1 rounded border border-indigo-500/30">+ Přidat krok</button>
                     </div>
-                    <div id="stepsContainer" class="flex flex-col gap-4 max-h-[350px] overflow-y-auto pr-1"></div>
+                    <div id="stepsContainer" class="flex flex-col gap-4 max-h-[700px] overflow-y-auto pr-1"></div>
                 </div>
 
                 <button onclick="window.saveToCloud()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2">
@@ -157,7 +168,7 @@
 
                 <input type="text" id="dbSearch" oninput="window.renderDatabaseList()" placeholder="Hledat v databázi..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white">
 
-                <div id="dbListContainer" class="flex flex-col gap-2 max-h-[420px] overflow-y-auto pr-1">
+                <div id="dbListContainer" class="flex flex-col gap-2 max-h-[700px] overflow-y-auto pr-1"></div>
                     </div>
             </div>
 
@@ -166,7 +177,7 @@
         <section class="print-full-width flex-1 flex justify-center">
             <div id="a4Paper" class="a4-preview relative bg-white text-slate-900 px-12 py-8 md:px-16 md:py-10 shadow-2xl border border-slate-200 flex flex-col justify-between overflow-hidden">
                 
-                <img src="Pasport_Kana_gray.png" alt="Vodoznak" class="absolute inset-0 m-auto w-[60%] opacity-[0.15] pointer-events-none z-0">
+                <img src="Pasport_Kana_gray.png" alt="Vodoznak" class="absolute inset-0 m-auto w-[60%] opacity-[0.25] pointer-events-none z-0 print-watermark">
 
                 <div class="relative z-10">
                     
@@ -186,6 +197,7 @@
                 </div>
 
                 <div class="border-t border-slate-200 pt-3 mt-6 text-[10px] text-slate-400 font-mono flex justify-between items-end relative z-10">
+                    <div id="pdfFooterHide" class="border-t border-slate-200 pt-3 mt-6 text-[10px] text-slate-400 font-mono flex justify-between items-end relative z-10">
                     <div class="text-left">
                         <div>VERZE: <span id="pVersion" class="font-bold text-slate-700">1.0</span></div>
                         <div>DATUM: <span id="pDate" class="font-bold text-slate-700"></span></div>
@@ -315,7 +327,7 @@
                         <button onclick="window.removeStep(${index})" class="absolute top-3 right-3 text-rose-500 text-xs font-bold">Odstranit</button>
                         <div class="text-xs font-bold text-indigo-400 mb-1">KROK #${index + 1}</div>
                         <input type="text" value="${step.title}" oninput="window.updateStepData(${index}, 'title', this.value)" placeholder="Nadpis" class="w-full bg-slate-800 border-slate-700 rounded px-2 py-1 text-xs text-white mb-2">
-                        <textarea oninput="window.updateStepData(${index}, 'content', this.value)" rows="3" placeholder="Popis..." class="w-full bg-slate-800 border-slate-700 rounded px-2 py-1 text-xs text-white mb-2">${step.content}</textarea>
+                        <textarea oninput="this.style.height='';this.style.height=this.scrollHeight+'px';window.updateStepData(${index}, 'content', this.value)" rows="3" placeholder="Popis..." class="w-full bg-slate-800 border-slate-700 rounded px-2 py-1 text-xs text-white mb-2 overflow-hidden resize-none">${step.content}</textarea>
                         <textarea oninput="window.updateStepData(${index}, 'code', this.value)" rows="1" placeholder="Volitelný kód" class="w-full bg-slate-800 border-slate-700 rounded px-2 py-1 text-[11px] font-mono text-emerald-300">${step.code || ""}</textarea>
                     </div>`;
             });
@@ -347,7 +359,89 @@
             `).join('');
         };
 
-        window.triggerPrint = () => window.print();
+        window.triggerPrint = () => {
+            window.showToast("Generuji profesionální PDF, prosím čekejte...");
+
+            const element = document.getElementById('a4Paper');
+            const footerElem = document.getElementById('pdfFooterHide');
+            
+            // Dočasně skryjeme HTML patičku (vykreslíme ji pak dynamicky na každou stranu i s číslováním)
+            if(footerElem) footerElem.style.display = 'none';
+
+            // Nastavení pro html2pdf (25mm horní a 20mm spodní okraj pro naše dynamické hlavičky)
+            const opt = {
+                margin:       [25, 0, 20, 0], 
+                filename:     (document.getElementById('docTitle').value || 'Firemni_Navod') + '.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Pomocná funkce pro odstranění diakritiky (jsPDF v hlavičkách a patičkách neumí české háčky/čárky)
+            const strip = (s) => (s||'').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+            html2pdf().from(element).set(opt).toPdf().get('pdf').then(function (pdf) {
+                const totalPages = pdf.internal.getNumberOfPages();
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                
+                // Načtení dat pro hlavičku/patičku z dokumentu
+                const cat = strip(document.getElementById('pCategory').innerText);
+                const title = strip(document.getElementById('pTitle').innerText);
+                const ver = strip(document.getElementById('pVersion').innerText);
+                const date = strip(document.getElementById('pDate').innerText);
+                const author = strip(document.getElementById('pAuthor').innerText);
+
+                // Načteme černé logo ze stránky
+                const logoEl = document.querySelector('img[alt="Logo Pasport Kaňa"]');
+
+                // Projdeme všechny vygenerované stránky a dokreslíme hlavičky a patičky
+                for (let i = 1; i <= totalPages; i++) {
+                    pdf.setPage(i);
+                    
+                    // --- PATIČKA NA KAŽDÉ STRANĚ (Včetně číslování) ---
+                    pdf.setDrawColor(226, 232, 240); // Světle šedá čára
+                    pdf.line(15, pageHeight - 15, pageWidth - 15, pageHeight - 15);
+                    
+                    pdf.setFontSize(8);
+                    pdf.setTextColor(148, 163, 184); // Barva textu
+                    
+                    // Verze a datum vlevo, Autor a strana vpravo
+                    pdf.text(`VERZE: ${ver}   DATUM: ${date}`, 15, pageHeight - 10);
+                    pdf.text(`AUTOR: ${author}   STRANA: ${i}/${totalPages}`, pageWidth - 15, pageHeight - 10, { align: 'right' });
+
+                    // --- ZÁHLAVÍ NA 2. A DALŠÍ STRANĚ ---
+                    if (i > 1) {
+                        pdf.setDrawColor(79, 70, 229); // Modrá fialová čára
+                        pdf.setLineWidth(1);
+                        pdf.line(15, 20, pageWidth - 15, 20);
+
+                        // Kategorie vlevo
+                        pdf.setFontSize(9);
+                        pdf.setFont('helvetica', 'bold');
+                        pdf.setTextColor(79, 70, 229);
+                        pdf.text(cat.toUpperCase(), 15, 17);
+
+                        // Název návodu vedle kategorie
+                        pdf.setFontSize(10);
+                        pdf.setFont('helvetica', 'normal');
+                        pdf.setTextColor(15, 23, 42);
+                        pdf.text(title, 60, 17); 
+
+                        // Vložení černého loga vpravo nahoře
+                        if (logoEl && logoEl.src) {
+                            try {
+                                pdf.addImage(logoEl.src, 'PNG', pageWidth - 45, 8, 30, 10);
+                            } catch(e) { console.warn('Chyba vložení loga', e); }
+                        }
+                    }
+                }
+            }).save().then(() => {
+                // Vrátíme HTML patičku zpět, aby byla vidět na webu
+                if(footerElem) footerElem.style.display = 'flex';
+                window.showToast("PDF bylo úspěšně staženo!");
+            });
+        };
 
         // Funkce pro kopírování promptu do schránky
         window.copyAiPrompt = () => {
