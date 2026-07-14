@@ -369,18 +369,15 @@
             const element = document.getElementById('a4Paper');
             const footerElem = document.getElementById('pdfFooterHide');
             
-            // Dočasně skryjeme patičku pro PDF export
             if(footerElem) footerElem.style.display = 'none';
 
             const originalClasses = element.className;
-            // Odstraníme stíny a velké webové okraje z náhledu
             element.classList.remove('shadow-2xl', 'border', 'border-slate-200', 'py-8', 'md:py-10');
-            // Zamezíme zbytečné mezeře nahoře přidáním nulového paddingu
             element.classList.add('py-0');
 
-            // OPRAVA MEZERY: Horní margin snížen na 18, aby 1. strana nevisela zbytečně nízko
+            // ZLATÁ STŘEDNÍ CESTA: 10 mm okraj nahoře (ideální kompromis pro 1. i 2. stranu)
             const opt = {
-                margin:       [18, 0, 20, 0], 
+                margin:       [10, 0, 20, 0], 
                 filename:     (document.getElementById('docTitle').value || 'Firemni_Navod') + '.pdf',
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
@@ -405,7 +402,7 @@
                 for (let i = 1; i <= totalPages; i++) {
                     pdf.setPage(i);
                     
-                    // --- ZÁPATÍ ---
+                    // --- ZÁPATÍ (Na každé straně) ---
                     pdf.setDrawColor(226, 232, 240);
                     pdf.line(15, pageHeight - 18, pageWidth - 15, pageHeight - 18);
                     
@@ -418,26 +415,26 @@
                     pdf.text(`AUTOR: ${author}`, pageWidth - 15, pageHeight - 13, { align: 'right' });
                     pdf.text(`STRANA: ${i}/${totalPages}`, pageWidth - 15, pageHeight - 9, { align: 'right' });
 
-                    // --- ZÁHLAVÍ (od 2. strany) ---
-                    // Nyní se kreslí výše do oné 18mm mezery, aby se nepřekrývalo s textem
+                    // --- ZÁHLAVÍ (od 2. strany výše) - KOMPAKTNÍ VERZE ---
                     if (i > 1) {
                         pdf.setDrawColor(79, 70, 229);
-                        pdf.setLineWidth(1);
-                        pdf.line(15, 16, pageWidth - 15, 16);
+                        pdf.setLineWidth(0.5);
+                        pdf.line(15, 9, pageWidth - 15, 9); // Čára nakreslena těsně nad textem (9 mm odshora)
 
-                        pdf.setFontSize(9);
+                        pdf.setFontSize(8);
                         pdf.setFont('helvetica', 'bold');
                         pdf.setTextColor(79, 70, 229);
-                        pdf.text(cat.toUpperCase(), 15, 13);
+                        pdf.text(cat.toUpperCase(), 15, 7.5);
 
-                        pdf.setFontSize(10);
+                        pdf.setFontSize(9);
                         pdf.setFont('helvetica', 'normal');
                         pdf.setTextColor(15, 23, 42);
-                        pdf.text(title, pageWidth - 50, 13, { align: 'right' }); 
+                        pdf.text(title, pageWidth - 50, 7.5, { align: 'right' }); 
 
                         if (logoEl && logoEl.src) {
                             try {
-                                pdf.addImage(logoEl.src, 'PNG', pageWidth - 45, 6, 30, 9);
+                                // Zmenšené logo vloženo do úzkého pruhu nahoře
+                                pdf.addImage(logoEl.src, 'PNG', pageWidth - 45, 2.5, 30, 6);
                             } catch(e) {}
                         }
                     }
