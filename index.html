@@ -13,20 +13,19 @@
             .print-full-width { width: 100% !important; max-width: 100% !important; box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; }
             .a4-preview { width: 100% !important; min-height: auto !important; border: none !important; box-shadow: none !important; padding: 0 !important; }
         }
-        /* Loader pro načítání databáze */
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
 
-    <div id="loginOverlay" class="no-print fixed inset-0 bg-slate-950 z-[100] flex items-center justify-center">
+    <div id="loginOverlay" class="no-print fixed inset-0 bg-slate-950 z-[100] flex items-center justify-center transition-opacity duration-300">
         <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl max-w-md w-full text-center">
             <div class="bg-indigo-600/20 text-indigo-400 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
             </div>
             <h2 class="text-2xl font-bold text-white mb-2">Firemní Knowledge Base</h2>
-            <p class="text-sm text-slate-400 mb-6">Pro přístup do cloudové databáze zadejte své jméno. Váš přístup bude zaznamenán.</p>
+            <p class="text-sm text-slate-400 mb-6">Pro přístup do cloudové databáze zadejte své jméno. Váš prohlížeč si jej zapamatuje.</p>
             
             <input type="text" id="loginName" placeholder="Vaše jméno (např. Jan Novák)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500" onkeypress="if(event.key === 'Enter') window.loginUser()">
             <button onclick="window.loginUser()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition">
@@ -45,7 +44,8 @@
                 <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
                     KNOWLEDGE BASE <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-mono font-bold flex items-center gap-1"><div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div> CLOUD SYNC</span>
                 </h1>
-                <p class="text-xs text-slate-400">Přihlášen jako: <span id="currentUserDisplay" class="font-bold text-slate-200">...</span></p>
+                <p class="text-xs text-slate-400">Přihlášen jako: <span id="currentUserDisplay" class="font-bold text-slate-200">...</span> 
+                <button onclick="window.logoutUser()" class="ml-2 text-[10px] text-rose-400 hover:text-rose-300 underline">(Odhlásit)</button></p>
             </div>
         </div>
         
@@ -128,22 +128,29 @@
             </div>
 
             <div id="panel-db" class="hidden bg-slate-800 rounded-2xl border border-slate-700 p-5 flex flex-col gap-4 shadow-lg">
-                <div class="flex items-center justify-between">
-                    <h3 class="font-bold text-white text-lg">Sdílené návody týmu</h3>
-                    <div class="flex items-center gap-3">
-                        <button onclick="window.openAiImport()" class="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-xs px-3 py-1.5 rounded border border-indigo-500/30 transition flex items-center gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                            Nahrát návod od AI
-                        </button>
+                <div class="flex flex-col gap-3 border-b border-slate-700 pb-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-white text-lg">Sdílené návody</h3>
                         <div id="cloudStatus" class="flex items-center gap-2 text-xs text-emerald-400">
                             <div class="loader" style="width: 12px; height: 12px; border-width: 2px;"></div> Načítání...
                         </div>
                     </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <button onclick="window.copyAiPrompt()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-[11px] font-semibold px-2 py-2 rounded border border-slate-600 transition flex items-center justify-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+                            Generovat pokyn pro AI
+                        </button>
+                        <button onclick="window.openAiImport()" class="flex-1 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 text-[11px] font-semibold px-2 py-2 rounded border border-indigo-500/30 transition flex items-center justify-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            Nahrát návod od AI
+                        </button>
+                    </div>
                 </div>
 
-                <input type="text" id="dbSearch" oninput="window.renderDatabaseList()" placeholder="Hledat..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white">
+                <input type="text" id="dbSearch" oninput="window.renderDatabaseList()" placeholder="Hledat v databázi..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white">
 
-                <div id="dbListContainer" class="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-1">
+                <div id="dbListContainer" class="flex flex-col gap-2 max-h-[420px] overflow-y-auto pr-1">
                     </div>
             </div>
 
@@ -178,16 +185,8 @@
 
     <div id="aiImportOverlay" class="no-print fixed inset-0 bg-slate-950/80 z-[110] hidden flex items-center justify-center backdrop-blur-sm">
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-2xl max-w-2xl w-full flex flex-col gap-4">
-            <div class="flex justify-between items-start">
-                <div>
-                    <h3 class="text-xl font-bold text-white">Importovat návod od AI</h3>
-                    <p class="text-sm text-slate-400 mt-1">Sem vložte JSON datový kód, který vám vygenerovala umělá inteligence.</p>
-                </div>
-                <button onclick="window.copyAiPrompt()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs px-3 py-1.5 rounded flex items-center gap-1 transition border border-slate-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-                    Kopírovat pokyn pro AI
-                </button>
-            </div>
+            <h3 class="text-xl font-bold text-white">Importovat návod od AI</h3>
+            <p class="text-sm text-slate-400">Sem vložte JSON datový kód, který vám vygenerovala umělá inteligence.</p>
             
             <textarea id="aiImportText" rows="12" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-sm font-mono text-emerald-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Zde vložte zkopírovaný JSON text..."></textarea>
             
@@ -204,24 +203,40 @@
         window.cloudGuides = [];
         window.loggedInUserName = "";
 
+        // ODBAVENÍ LOKÁLNÍ PAMĚTI (localStorage) - Trvalé přihlášení
+        const STORAGE_KEY = 'company_kb_username';
+
         window.loginUser = () => {
             const nameInput = document.getElementById('loginName').value.trim();
             if(!nameInput) {
                 document.getElementById('loginError').classList.remove('hidden');
                 return;
             }
+            
+            // Uložení jména do paměti prohlížeče!
+            localStorage.setItem(STORAGE_KEY, nameInput);
+            
             window.loggedInUserName = nameInput;
             document.getElementById('currentUserDisplay').innerText = nameInput;
             
             const authorInput = document.getElementById('docAuthor');
-            if(authorInput) authorInput.value = nameInput;
+            if(authorInput && !authorInput.value) authorInput.value = nameInput;
             
             document.getElementById('loginOverlay').style.display = 'none';
             window.updatePreview();
 
+            // Pokud je načten Firebase modul, zaloguje se vstup do DB
             if (typeof window.logLoginToCloud === "function") {
                 window.logLoginToCloud(nameInput);
             }
+        };
+
+        // Funkce pro odhlášení
+        window.logoutUser = () => {
+            localStorage.removeItem(STORAGE_KEY);
+            window.loggedInUserName = "";
+            document.getElementById('loginName').value = "";
+            document.getElementById('loginOverlay').style.display = 'flex';
         };
 
         window.switchTab = (tab) => {
@@ -322,7 +337,7 @@
         window.copyAiPrompt = () => {
             const promptText = `Z naší konverzace vytvoř technický návod. Výsledek mi vygeneruj STRICTNĚ jako jeden JSON array, který bude obsahovat jeden objekt s těmito přesnými klíči: "title" (krátký název), "desc" (popis problému), "category" (kategorie), "version" (např. v1.0) a "steps". Klíč "steps" bude array objektů, kde každý krok má klíče: "title" (název kroku), "content" (popis postupu s \\n pro odřádkování) a "code" (volitelný kód nebo tip). Nevypisuj žádný jiný text, pouze čistý JSON kód.`;
             navigator.clipboard.writeText(promptText).then(() => {
-                window.showToast("Pokyn byl zkopírován. Vložte jej do chatu s AI.");
+                window.showToast("Pokyn byl zkopírován do schránky. Vložte jej do chatu s AI.");
             });
         };
 
@@ -377,8 +392,16 @@
         window.deleteFromCloud = async (id) => { window.showToast("Aplikace běží v Offline módu."); };
         window.processAiImport = async () => { window.showToast("Aplikace běží v Offline módu."); };
 
+        // AUTOMATICKÝ START / AUTO-LOGIN
         document.addEventListener('DOMContentLoaded', () => {
-            window.clearForm();
+            const savedName = localStorage.getItem(STORAGE_KEY);
+            if (savedName) {
+                // Pokud má uživatel uložené jméno, rovnou ho přihlásíme na pozadí
+                document.getElementById('loginName').value = savedName;
+                window.loginUser();
+            } else {
+                window.clearForm();
+            }
         });
     </script>
 
@@ -402,6 +425,7 @@
         let db = null;
         let auth = null;
         let appId = "firemni-kb-app";
+        let hasLoggedEntry = false; // Pojistka, aby se nezapisoval login při každém reloadu dvakrát
 
         try {
             const app = initializeApp(MY_FIREBASE_CONFIG);
@@ -409,8 +433,9 @@
             db = getFirestore(app);
 
             window.logLoginToCloud = async (name) => {
-                if(auth && auth.currentUser && db) {
+                if(auth && auth.currentUser && db && !hasLoggedEntry) {
                     try {
+                        hasLoggedEntry = true;
                         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'logs'), {
                             userName: name,
                             action: 'login',
@@ -532,6 +557,11 @@
 
             onAuthStateChanged(auth, (user) => {
                 if (user && db) {
+                    // Pokud se přihlásí a má v localStorage jméno, pošle se to do databáze (zpožděný zápis logu)
+                    if (window.loggedInUserName && !hasLoggedEntry) {
+                        window.logLoginToCloud(window.loggedInUserName);
+                    }
+
                     const guidesRef = collection(db, 'artifacts', appId, 'public', 'data', 'guides');
                     onSnapshot(guidesRef, (snapshot) => {
                         window.cloudGuides = [];
