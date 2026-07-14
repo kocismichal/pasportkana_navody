@@ -179,63 +179,40 @@
         </section>
     </main>
 
-    <!-- FIREBASE & LOGIKA APLIKACE (Jako JS Modul) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <!-- ZÁKLADNÍ LOGIKA APLIKACE (Funguje i bez cloudu a lokálně) -->
+    <script>
+        // Globální proměnné přístupné všude
+        window.appSteps = [];
+        window.cloudGuides = [];
+        window.loggedInUserName = "";
 
-        // 1. VAŠE KONKRÉTNÍ KLÍČE Z FIREBASE CONSOLE
-        const MY_FIREBASE_CONFIG = {
-            apiKey: "AIzaSyBlrTyni-oy4kEr08ZqDBXh6aHfTWtOkPA",
-            authDomain: "pasportkana.firebaseapp.com",
-            projectId: "pasportkana",
-            storageBucket: "pasportkana.firebasestorage.app",
-            messagingSenderId: "32112827839",
-            appId: "1:32112827839:web:274eb41ec288261cec550a",
-            measurementId: "G-RTDPV2B7LW"
-        };
-
-        // Globální proměnné
-        let db = null;
-        let auth = null;
-        let appId = "firemni-kb-app"; // Konstantní název pro vaši databázi
-        let cloudGuides = [];
-        let steps = [];
-        let loggedInUserName = "";
-
-        // --- UŽIVATELSKÉ FUNKCE ---
-        
+        // Osobní funkce
         window.vyhodnotZimniPripravu = () => {
-            showToast("Zimní příprava byla vyhodnocena! (Spuštěno z vlastního tlačítka)");
+            window.showToast("Zimní příprava byla vyhodnocena! (Spuštěno z vlastního tlačítka)");
         };
 
-        window.loginUser = async () => {
+        // Přihlášení
+        window.loginUser = () => {
             const nameInput = document.getElementById('loginName').value.trim();
             if(!nameInput) {
                 document.getElementById('loginError').classList.remove('hidden');
                 return;
             }
-            loggedInUserName = nameInput;
+            window.loggedInUserName = nameInput;
             document.getElementById('currentUserDisplay').innerText = nameInput;
             document.getElementById('docAuthor').value = nameInput;
             
-            // Schováme překryv login obrazovky
+            // Schováme překryv login obrazovky za všech okolností
             document.getElementById('loginOverlay').style.display = 'none';
             window.updatePreview();
 
-            // Zapíšeme log do cloudu (pouze pokud je Firebase aktivní)
-            if(auth && auth.currentUser && db) {
-                try {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'logs'), {
-                        userName: loggedInUserName,
-                        action: 'login',
-                        timestamp: serverTimestamp()
-                    });
-                } catch(e) { console.warn("Log nebyl zapsán", e); }
+            // Pokud se v modulu podaří načíst Firebase, pošle se tam log o přihlášení
+            if (typeof window.logLoginToCloud === "function") {
+                window.logLoginToCloud(nameInput);
             }
         };
 
+        // Přepínání záložek
         window.switchTab = (tab) => {
             const btnEdit = document.getElementById('tab-edit');
             const btnDb = document.getElementById('tab-db');
@@ -262,7 +239,7 @@
             document.getElementById('docCategory').value = "Interní";
             document.getElementById('docVersion').value = "v1.0";
             document.getElementById('templateSelector').value = "custom";
-            steps = [];
+            window.appSteps = [];
             window.renderStepsEditor();
             window.updatePreview();
         };
@@ -273,14 +250,14 @@
                 document.getElementById('docTitle').value = "SOP: Název postupu";
                 document.getElementById('docDesc').value = "Standardní postup...";
                 document.getElementById('docCategory').value = "Metodika";
-                steps = [
+                window.appSteps = [
                     { title: "Příprava", content: "Co připravit...", code: "" },
                     { title: "Postup", content: "Kroky...", code: "" }
                 ];
             } else if (selected === 'trouble') {
                 document.getElementById('docTitle').value = "Oprava: Název chyby";
                 document.getElementById('docCategory').value = "Troubleshooting";
-                steps = [{ title: "Diagnostika", content: "", code: "" }, { title: "Řešení", content: "", code: "" }];
+                window.appSteps = [{ title: "Diagnostika", content: "", code: "" }, { title: "Řešení", content: "", code: "" }];
             }
             window.renderStepsEditor();
             window.updatePreview();
@@ -289,7 +266,7 @@
         window.renderStepsEditor = () => {
             const container = document.getElementById('stepsContainer');
             container.innerHTML = "";
-            steps.forEach((step, index) => {
+            window.appSteps.forEach((step, index) => {
                 container.innerHTML += `
                     <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 relative">
                         <button onclick="window.removeStep(${index})" class="absolute top-3 right-3 text-rose-500 text-xs font-bold">Odstranit</button>
@@ -301,9 +278,9 @@
             });
         };
 
-        window.addStep = () => { steps.push({ title: "Nový krok", content: "", code: "" }); window.renderStepsEditor(); window.updatePreview(); };
-        window.removeStep = (i) => { steps.splice(i, 1); window.renderStepsEditor(); window.updatePreview(); };
-        window.updateStepData = (i, k, v) => { steps[i][k] = v; window.updatePreview(); };
+        window.addStep = () => { window.appSteps.push({ title: "Nový krok", content: "", code: "" }); window.renderStepsEditor(); window.updatePreview(); };
+        window.removeStep = (i) => { window.appSteps.splice(i, 1); window.renderStepsEditor(); window.updatePreview(); };
+        window.updateStepData = (i, k, v) => { window.appSteps[i][k] = v; window.updatePreview(); };
 
         window.updatePreview = () => {
             document.getElementById('pTitle').innerText = document.getElementById('docTitle').value || "Bez názvu";
@@ -316,7 +293,7 @@
             document.getElementById('pDate').innerText = `${today[2]}/${today[1]}/${today[0]}`;
 
             const contentContainer = document.getElementById('pContent');
-            contentContainer.innerHTML = steps.map(step => `
+            contentContainer.innerHTML = window.appSteps.map(step => `
                 <div class="border-l-2 border-indigo-200 pl-4 py-1">
                     <h4 class="font-bold text-slate-900">${step.title}</h4>
                     <p class="text-sm text-slate-700 mt-1">${step.content.replace(/\n/g, "<br>")}</p>
@@ -327,51 +304,23 @@
 
         window.triggerPrint = () => window.print();
 
-        const showToast = (msg) => {
+        window.showToast = (msg) => {
             const t = document.getElementById('toast');
             document.getElementById('toastMessage').innerText = msg;
             t.classList.replace('translate-y-20', 'translate-y-0'); t.classList.replace('opacity-0', 'opacity-100');
             setTimeout(() => { t.classList.replace('translate-y-0', 'translate-y-20'); t.classList.replace('opacity-100', 'opacity-0'); }, 3000);
         };
 
-        window.saveToCloud = async () => {
-            if (!auth || !auth.currentUser || !db) return showToast("Aplikace běží v Offline módu. (Chybí klíče)");
-            
-            const title = document.getElementById('docTitle').value;
-            if (!title) return showToast("Chyba: Návod musí mít název!");
-
-            const docId = document.getElementById('docTitle').getAttribute('data-editing-id') || 'guide_' + Date.now();
-            
-            const guideData = {
-                title: title,
-                desc: document.getElementById('docDesc').value,
-                category: document.getElementById('docCategory').value,
-                version: document.getElementById('docVersion').value,
-                author: document.getElementById('docAuthor').value,
-                steps: steps,
-                updatedAt: serverTimestamp(),
-                lastEditor: loggedInUserName
-            };
-
-            try {
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'guides', docId), guideData);
-                document.getElementById('docTitle').setAttribute('data-editing-id', docId);
-                showToast("Uloženo do firemního cloudu!");
-            } catch (error) {
-                console.error("Chyba ukládání", error);
-                showToast("Chyba při ukládání do cloudu.");
-            }
-        };
-
+        // Zobrazení databáze
         window.renderDatabaseList = () => {
             const searchVal = document.getElementById('dbSearch').value.toLowerCase();
             const container = document.getElementById('dbListContainer');
             container.innerHTML = "";
 
-            const filtered = cloudGuides.filter(i => (i.title||'').toLowerCase().includes(searchVal) || (i.category||'').toLowerCase().includes(searchVal));
+            const filtered = window.cloudGuides.filter(i => (i.title||'').toLowerCase().includes(searchVal) || (i.category||'').toLowerCase().includes(searchVal));
 
             if(filtered.length === 0) {
-                container.innerHTML = `<div class="text-center py-5 text-slate-500 text-sm">Nic nenalezeno (nebo jste v offline módu).</div>`; return;
+                container.innerHTML = `<div class="text-center py-5 text-slate-500 text-sm">Zatím nebyly uloženy žádné návody (nebo jste v offline módu).</div>`; return;
             }
 
             filtered.forEach(item => {
@@ -392,51 +341,126 @@
             });
         };
 
-        window.loadFromCloud = (id) => {
-            const documentData = cloudGuides.find(i => i.id === id);
-            if(!documentData) return;
-            document.getElementById('docTitle').value = documentData.title;
-            document.getElementById('docTitle').setAttribute('data-editing-id', id);
-            document.getElementById('docDesc').value = documentData.desc || "";
-            document.getElementById('docCategory').value = documentData.category || "";
-            document.getElementById('docVersion').value = documentData.version || "1.0";
-            document.getElementById('docAuthor').value = documentData.author || "";
-            steps = JSON.parse(JSON.stringify(documentData.steps || []));
-            
-            window.renderStepsEditor();
-            window.updatePreview();
-            window.switchTab('edit');
-            showToast("Staženo z cloudu a připraveno k úpravě.");
+        // Zástupné ("Stub") funkce pro případ, že se Firebase nenačte
+        window.saveToCloud = async () => { window.showToast("Aplikace běží v Offline módu. (Nelze ukládat)"); };
+        window.loadFromCloud = (id) => { window.showToast("Aplikace běží v Offline módu."); };
+        window.deleteFromCloud = async (id) => { window.showToast("Aplikace běží v Offline módu."); };
+
+        // Inicializace při prvním spuštění
+        document.addEventListener('DOMContentLoaded', () => {
+            window.clearForm();
+            document.getElementById('docAuthor').value = "Zadejte jméno...";
+        });
+    </script>
+
+
+    <!-- FIREBASE SYNCHRONIZACE (Přepisuje základní funkce o cloudové volání) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // 1. VAŠE KONKRÉTNÍ KLÍČE Z FIREBASE CONSOLE
+        const MY_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyBlrTyni-oy4kEr08ZqDBXh6aHfTWtOkPA",
+            authDomain: "pasportkana.firebaseapp.com",
+            projectId: "pasportkana",
+            storageBucket: "pasportkana.firebasestorage.app",
+            messagingSenderId: "32112827839",
+            appId: "1:32112827839:web:274eb41ec288261cec550a",
+            measurementId: "G-RTDPV2B7LW"
         };
 
-        window.deleteFromCloud = async (id) => {
-            if(!auth || !auth.currentUser || !db) return;
-            if (confirm("Skutečně smazat tento návod VŠEM ve firmě?")) {
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'guides', id));
-                    if(document.getElementById('docTitle').getAttribute('data-editing-id') === id) window.clearForm();
-                    showToast("Smazáno z cloudu.");
-                } catch(e) { console.error("Chyba mazání", e); }
-            }
-        };
+        let db = null;
+        let auth = null;
+        let appId = "firemni-kb-app";
 
-        // --- AUTHENTIFIKACE A START APLIKACE ---
         try {
-            // Použití Vaší konfigurace
-            let finalConfig = MY_FIREBASE_CONFIG;
-            
-            // Připojení k Firebase s vašimi klíči
-            const app = initializeApp(finalConfig);
+            const app = initializeApp(MY_FIREBASE_CONFIG);
             auth = getAuth(app);
             db = getFirestore(app);
 
+            // Funkce, kterou volá UI po kliknutí na login, aby se log zapsal
+            window.logLoginToCloud = async (name) => {
+                if(auth && auth.currentUser && db) {
+                    try {
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'logs'), {
+                            userName: name,
+                            action: 'login',
+                            timestamp: serverTimestamp()
+                        });
+                    } catch(e) { console.warn("Log se nepodařilo zapsat do cloudu", e); }
+                }
+            };
+
+            // Přepsání ukládání reálnou Firebase logikou
+            window.saveToCloud = async () => {
+                if (!auth || !auth.currentUser || !db) return window.showToast("Cloud není momentálně připojený.");
+                
+                const title = document.getElementById('docTitle').value;
+                if (!title) return window.showToast("Chyba: Návod musí mít název!");
+
+                const docId = document.getElementById('docTitle').getAttribute('data-editing-id') || 'guide_' + Date.now();
+                
+                const guideData = {
+                    title: title,
+                    desc: document.getElementById('docDesc').value,
+                    category: document.getElementById('docCategory').value,
+                    version: document.getElementById('docVersion').value,
+                    author: document.getElementById('docAuthor').value,
+                    steps: window.appSteps,
+                    updatedAt: serverTimestamp(),
+                    lastEditor: window.loggedInUserName
+                };
+
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'guides', docId), guideData);
+                    document.getElementById('docTitle').setAttribute('data-editing-id', docId);
+                    window.showToast("Uloženo do firemního cloudu!");
+                } catch (error) {
+                    console.error("Chyba ukládání", error);
+                    window.showToast("Chyba při ukládání do cloudu.");
+                }
+            };
+
+            // Načtení reálnou Firebase logikou
+            window.loadFromCloud = (id) => {
+                const documentData = window.cloudGuides.find(i => i.id === id);
+                if(!documentData) return;
+                
+                document.getElementById('docTitle').value = documentData.title;
+                document.getElementById('docTitle').setAttribute('data-editing-id', id);
+                document.getElementById('docDesc').value = documentData.desc || "";
+                document.getElementById('docCategory').value = documentData.category || "";
+                document.getElementById('docVersion').value = documentData.version || "1.0";
+                document.getElementById('docAuthor').value = documentData.author || "";
+                window.appSteps = JSON.parse(JSON.stringify(documentData.steps || []));
+                
+                window.renderStepsEditor();
+                window.updatePreview();
+                window.switchTab('edit');
+                window.showToast("Staženo z cloudu a připraveno k úpravě.");
+            };
+
+            // Smazání reálnou Firebase logikou
+            window.deleteFromCloud = async (id) => {
+                if(!auth || !auth.currentUser || !db) return;
+                if (confirm("Skutečně smazat tento návod VŠEM ve firmě?")) {
+                    try {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'guides', id));
+                        if(document.getElementById('docTitle').getAttribute('data-editing-id') === id) window.clearForm();
+                        window.showToast("Smazáno z cloudu.");
+                    } catch(e) { console.error("Chyba mazání", e); }
+                }
+            };
+
+            // Firebase Start a naslouchání
             const initAuth = async () => {
                 try {
-                    // Ve výchozím stavu se uživatel po zadání jména přihlásí anonymně pro získání přístupu do Firestore
                     await signInAnonymously(auth);
                 } catch(err) {
                     console.error("Autentizace selhala:", err);
-                    document.getElementById('cloudStatus').innerHTML = `<span class="text-rose-400">Přihlášení selhalo (Zkontrolujte pravidla v Auth)</span>`;
+                    document.getElementById('cloudStatus').innerHTML = `<span class="text-rose-400">Přihlášení selhalo</span>`;
                 }
             };
             initAuth();
@@ -445,28 +469,24 @@
                 if (user && db) {
                     const guidesRef = collection(db, 'artifacts', appId, 'public', 'data', 'guides');
                     onSnapshot(guidesRef, (snapshot) => {
-                        cloudGuides = [];
+                        window.cloudGuides = [];
                         snapshot.forEach((doc) => {
-                            cloudGuides.push({ id: doc.id, ...doc.data() });
+                            window.cloudGuides.push({ id: doc.id, ...doc.data() });
                         });
                         document.getElementById('cloudStatus').innerHTML = `● Živě synchronizováno`;
-                        document.getElementById('db-count').innerText = cloudGuides.length;
+                        document.getElementById('db-count').innerText = window.cloudGuides.length;
                         window.renderDatabaseList();
                     }, (error) => {
                         console.error("Chyba čtení databáze:", error);
-                        document.getElementById('cloudStatus').innerHTML = `<span class="text-rose-400">Chyba (ověřte pravidla ve Firestore)</span>`;
+                        document.getElementById('cloudStatus').innerHTML = `<span class="text-rose-400">Chyba synchronizace</span>`;
                     });
                 }
             });
             
         } catch(e) {
-            console.error("Fatální chyba při startu databáze:", e);
-            document.getElementById('cloudStatus').innerHTML = `<span class="text-rose-400">Offline (Chyba)</span>`;
+            console.warn("Firebase databáze nepodporována v tomto prostředí (Offline režim).", e);
+            document.getElementById('cloudStatus').innerHTML = `<span class="text-amber-400">Offline Mód</span>`;
         }
-
-        // Výchozí prázdná inicializace při načtení
-        window.clearForm();
-        document.getElementById('docAuthor').value = "Zadejte jméno...";
     </script>
 </body>
 </html>
