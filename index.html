@@ -179,17 +179,21 @@
                 
                 <img src="Pasport_Kana_gray.png" alt="Vodoznak" class="absolute inset-0 m-auto w-[60%] opacity-[0.25] pointer-events-none z-0 print-watermark">
 
-                <div class="relative z-10">
+                <div class="relative z-10 flex-1">
                     
-                    <div class="border-b-4 border-indigo-600 pb-5 mb-8 flex justify-between items-center">
-                        <div>
+                    <div class="border-b-4 border-indigo-600 pb-5 mb-8 flex justify-between items-start gap-4">
+                        <div class="flex-none">
                             <span id="pCategory" class="text-xs font-extrabold uppercase text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Kategorie</span>
-                            <h2 id="pTitle" class="text-3xl font-black text-slate-950 mt-3 leading-tight">Název návodu</h2>
+                        </div>
+                        
+                        <div class="flex-1 text-right mt-1 pr-4 border-r-2 border-slate-100">
+                            <h2 id="pTitle" class="text-3xl font-black text-slate-950 leading-tight">Název návodu</h2>
                             <p id="pDesc" class="text-sm text-slate-600 mt-2 italic">Krátká anotace.</p>
                         </div>
-                        <div class="text-right shrink-0 flex flex-col items-end gap-1">
-                            <img src="Pasport_Kana_black.png" alt="Logo Pasport Kaňa" class="h-24 object-contain">
-                            <div class="text-slate-500 font-bold text-sm uppercase tracking-widest">Firemní manuál</div>
+
+                        <div class="text-right shrink-0 flex flex-col items-center gap-1 w-[120px]">
+                            <img src="Pasport_Kana_black.png" alt="Logo Pasport Kaňa" class="h-16 object-contain">
+                            <div class="text-slate-500 font-bold text-[10px] uppercase tracking-widest text-center">Firemní manuál</div>
                         </div>
                     </div>
                     
@@ -197,13 +201,13 @@
                 </div>
 
                 <div class="border-t border-slate-200 pt-3 mt-6 text-[10px] text-slate-400 font-mono flex justify-between items-end relative z-10">
-                    <div id="pdfFooterHide" class="border-t border-slate-200 pt-3 mt-6 text-[10px] text-slate-400 font-mono flex justify-between items-end relative z-10">
-                    <div class="text-left">
-                        <div>VERZE: <span id="pVersion" class="font-bold text-slate-700">1.0</span></div>
+                    <div class="text-left flex flex-col gap-1">
                         <div>DATUM: <span id="pDate" class="font-bold text-slate-700"></span></div>
+                        <div>VERZE: <span id="pVersion" class="font-bold text-slate-700">1.0</span></div>
                     </div>
-                    <div class="text-right">
+                    <div class="text-right flex flex-col gap-1">
                         <div>AUTOR: <span id="pAuthor" class="font-bold text-slate-600"></span></div>
+                        <div>STRANA: <span class="font-bold text-slate-700">1/1</span></div>
                     </div>
                 </div>
                 
@@ -359,94 +363,7 @@
             `).join('');
         };
 
-        window.triggerPrint = () => {
-            window.showToast("Generuji profesionální PDF, prosím čekejte...");
-
-            const element = document.getElementById('a4Paper');
-            const footerElem = document.getElementById('pdfFooterHide');
-            
-            // Dočasně skryjeme HTML patičku (vykreslíme ji pak dynamicky na každou stranu i s číslováním)
-            if(footerElem) footerElem.style.display = 'none';
-
-            // Nastavení pro html2pdf (25mm horní a 22mm spodní okraj)
-            const opt = {
-                margin:       [25, 0, 22, 0], 
-                filename:     (document.getElementById('docTitle').value || 'Firemni_Navod') + '.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            // Pomocná funkce pro odstranění diakritiky
-            const strip = (s) => (s||'').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-            html2pdf().from(element).set(opt).toPdf().get('pdf').then(function (pdf) {
-                const totalPages = pdf.internal.getNumberOfPages();
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                
-                // Načtení dat pro hlavičku/patičku z dokumentu
-                const cat = strip(document.getElementById('pCategory').innerText);
-                const title = strip(document.getElementById('pTitle').innerText);
-                const ver = strip(document.getElementById('pVersion').innerText);
-                const date = strip(document.getElementById('pDate').innerText);
-                const author = strip(document.getElementById('pAuthor').innerText);
-
-                // Načteme černé logo ze stránky
-                const logoEl = document.querySelector('img[alt="Logo Pasport Kaňa"]');
-
-                // Projdeme všechny vygenerované stránky a dokreslíme hlavičky a patičky
-                for (let i = 1; i <= totalPages; i++) {
-                    pdf.setPage(i);
-                    
-                    // --- PATIČKA NA KAŽDÉ STRANĚ (Včetně číslování) ---
-                    pdf.setDrawColor(226, 232, 240); // Světle šedá čára
-                    pdf.line(15, pageHeight - 18, pageWidth - 15, pageHeight - 18);
-                    
-                    pdf.setFontSize(8);
-                    pdf.setTextColor(148, 163, 184); // Barva textu
-                    
-                    // Datum a Verze vlevo na dvou řádcích
-                    pdf.text(`DATUM: ${date}`, 15, pageHeight - 13);
-                    pdf.text(`VERZE: ${ver}`, 15, pageHeight - 9);
-                    
-                    // Autor a Strana vpravo na dvou řádcích
-                    pdf.text(`AUTOR: ${author}`, pageWidth - 15, pageHeight - 13, { align: 'right' });
-                    pdf.text(`STRANA: ${i}/${totalPages}`, pageWidth - 15, pageHeight - 9, { align: 'right' });
-
-                    // --- ZÁHLAVÍ NA 2. A DALŠÍ STRANĚ ---
-                    if (i > 1) {
-                        pdf.setDrawColor(79, 70, 229); // Modrá fialová čára
-                        pdf.setLineWidth(1);
-                        pdf.line(15, 20, pageWidth - 15, 20);
-
-                        // Kategorie vlevo
-                        pdf.setFontSize(9);
-                        pdf.setFont('helvetica', 'bold');
-                        pdf.setTextColor(79, 70, 229);
-                        pdf.text(cat.toUpperCase(), 15, 17);
-
-                        // Název návodu zarovnaný vpravo (vedle loga)
-                        pdf.setFontSize(10);
-                        pdf.setFont('helvetica', 'normal');
-                        pdf.setTextColor(15, 23, 42);
-                        // Zarovnáme text vpravo tak, aby končil před logem (šířka loga je 30, okraj je 15 = 45. Dámo to na 50)
-                        pdf.text(title, pageWidth - 50, 17, { align: 'right' }); 
-
-                        // Vložení černého loga vpravo nahoře
-                        if (logoEl && logoEl.src) {
-                            try {
-                                pdf.addImage(logoEl.src, 'PNG', pageWidth - 45, 8, 30, 10);
-                            } catch(e) { console.warn('Chyba vložení loga', e); }
-                        }
-                    }
-                }
-            }).save().then(() => {
-                // Vrátíme HTML patičku zpět, aby byla vidět na webu
-                if(footerElem) footerElem.style.display = 'flex';
-                window.showToast("PDF bylo úspěšně staženo!");
-            });
-        };
+        window.triggerPrint = () => window.print();
 
         // Funkce pro kopírování promptu do schránky
         window.copyAiPrompt = () => {
