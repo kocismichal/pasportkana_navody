@@ -20,7 +20,6 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
 
-    <!-- PŘIHLAŠOVACÍ OBRAZOVKA (Simulace firemního loginu) -->
     <div id="loginOverlay" class="no-print fixed inset-0 bg-slate-950 z-[100] flex items-center justify-center">
         <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl max-w-md w-full text-center">
             <div class="bg-indigo-600/20 text-indigo-400 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
@@ -37,7 +36,6 @@
         </div>
     </div>
 
-    <!-- HLAVNÍ NAVIGACE -->
     <header class="no-print bg-slate-800 border-b border-slate-700 sticky top-0 z-50 px-6 py-4 flex flex-wrap items-center justify-between gap-4 shadow-md">
         <div class="flex items-center gap-3">
             <div class="bg-indigo-600 text-white p-2.5 rounded-lg shadow-inner">
@@ -59,15 +57,12 @@
         </div>
     </header>
 
-    <!-- NOTIFIKACE -->
     <div id="toast" class="no-print fixed bottom-5 right-5 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-2xl transition-all transform translate-y-20 opacity-0 z-50 flex items-center gap-3">
         <span id="toastMessage">Návod byl uložen!</span>
     </div>
 
-    <!-- HLAVNÍ OBSAH -->
     <main class="print-full-width p-6 flex flex-col lg:flex-row gap-6 max-w-[1800px] mx-auto">
         
-        <!-- LEVÝ PANEL -->
         <section class="no-print w-full lg:w-[450px] shrink-0 flex flex-col gap-6">
             
             <div class="bg-slate-800 p-1.5 rounded-xl border border-slate-700 flex gap-1">
@@ -79,7 +74,6 @@
                 </button>
             </div>
 
-            <!-- TAB: EDITOR -->
             <div id="panel-edit" class="bg-slate-800 rounded-2xl border border-slate-700 p-5 flex flex-col gap-5 shadow-lg">
                 <div class="flex items-center justify-between">
                     <h3 class="font-bold text-white text-lg">Tvorba dokumentu</h3>
@@ -114,7 +108,6 @@
                         <input type="text" id="docVersion" oninput="window.updatePreview()" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white">
                     </div>
                     <div class="col-span-2">
-                        <!-- Zde bylo chybějící políčko pro Autora! -->
                         <label class="block text-xs text-slate-400 mb-1">Autor / Zpracoval</label>
                         <input type="text" id="docAuthor" oninput="window.updatePreview()" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white">
                     </div>
@@ -134,7 +127,6 @@
                 </button>
             </div>
 
-            <!-- TAB: DATABÁZE -->
             <div id="panel-db" class="hidden bg-slate-800 rounded-2xl border border-slate-700 p-5 flex flex-col gap-4 shadow-lg">
                 <div class="flex items-center justify-between">
                     <h3 class="font-bold text-white text-lg">Sdílené návody týmu</h3>
@@ -152,13 +144,11 @@
                 <input type="text" id="dbSearch" oninput="window.renderDatabaseList()" placeholder="Hledat..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm text-white">
 
                 <div id="dbListContainer" class="flex flex-col gap-2 max-h-[500px] overflow-y-auto pr-1">
-                    <!-- Data z cloudu -->
-                </div>
+                    </div>
             </div>
 
         </section>
 
-        <!-- PRAVÝ PANEL: A4 NÁHLED -->
         <section class="print-full-width flex-1 flex justify-center">
             <div id="a4Paper" class="a4-preview bg-white text-slate-900 p-12 md:p-16 shadow-2xl border border-slate-200 flex flex-col justify-between">
                 <div>
@@ -186,12 +176,21 @@
         </section>
     </main>
 
-    <!-- MODÁLNÍ OKNO PRO IMPORT Z AI -->
     <div id="aiImportOverlay" class="no-print fixed inset-0 bg-slate-950/80 z-[110] hidden flex items-center justify-center backdrop-blur-sm">
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-2xl max-w-2xl w-full flex flex-col gap-4">
-            <h3 class="text-xl font-bold text-white">Importovat návod od AI</h3>
-            <p class="text-sm text-slate-400">Sem vložte speciální datový kód, který vám vygenerovala umělá inteligence.</p>
-            <textarea id="aiImportText" rows="12" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-sm font-mono text-emerald-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Zde vložte zkopírovaný text..."></textarea>
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="text-xl font-bold text-white">Importovat návod od AI</h3>
+                    <p class="text-sm text-slate-400 mt-1">Sem vložte JSON datový kód, který vám vygenerovala umělá inteligence.</p>
+                </div>
+                <button onclick="window.copyAiPrompt()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs px-3 py-1.5 rounded flex items-center gap-1 transition border border-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+                    Kopírovat pokyn pro AI
+                </button>
+            </div>
+            
+            <textarea id="aiImportText" rows="12" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-sm font-mono text-emerald-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Zde vložte zkopírovaný JSON text..."></textarea>
+            
             <div class="flex justify-end gap-3 mt-2">
                 <button onclick="window.closeAiImport()" class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-700 transition">Zrušit</button>
                 <button onclick="window.processAiImport()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-lg text-sm font-bold transition shadow-lg">Zpracovat a uložit do cloudu</button>
@@ -199,19 +198,12 @@
         </div>
     </div>
 
-    <!-- ZÁKLADNÍ LOGIKA APLIKACE -->
     <script>
-        // Globální proměnné přístupné všude
+        // Globální proměnné
         window.appSteps = [];
         window.cloudGuides = [];
         window.loggedInUserName = "";
 
-        // Osobní funkce
-        window.vyhodnotZimniPripravu = () => {
-            window.showToast("Zimní příprava byla vyhodnocena! (Spuštěno z vlastního tlačítka)");
-        };
-
-        // Přihlášení
         window.loginUser = () => {
             const nameInput = document.getElementById('loginName').value.trim();
             if(!nameInput) {
@@ -221,21 +213,17 @@
             window.loggedInUserName = nameInput;
             document.getElementById('currentUserDisplay').innerText = nameInput;
             
-            // Zde to dříve padalo, protože ID docAuthor chybělo! Nyní je v pořádku zpět.
             const authorInput = document.getElementById('docAuthor');
             if(authorInput) authorInput.value = nameInput;
             
-            // Schováme překryv login obrazovky
             document.getElementById('loginOverlay').style.display = 'none';
             window.updatePreview();
 
-            // Pokud se v modulu podaří načíst Firebase, pošle se tam log o přihlášení
             if (typeof window.logLoginToCloud === "function") {
                 window.logLoginToCloud(nameInput);
             }
         };
 
-        // Přepínání záložek
         window.switchTab = (tab) => {
             const btnEdit = document.getElementById('tab-edit');
             const btnDb = document.getElementById('tab-db');
@@ -312,7 +300,6 @@
             document.getElementById('pCategory').innerText = document.getElementById('docCategory').value || "Kategorie";
             document.getElementById('pVersion').innerText = document.getElementById('docVersion').value || "1.0";
             
-            // Zde to dříve padalo, nyní funguje díky HTML políčku
             const docAuthorElem = document.getElementById('docAuthor');
             document.getElementById('pAuthor').innerText = (docAuthorElem && docAuthorElem.value) ? docAuthorElem.value : "Nezadáno";
             
@@ -331,6 +318,14 @@
 
         window.triggerPrint = () => window.print();
 
+        // Funkce pro kopírování promptu do schránky
+        window.copyAiPrompt = () => {
+            const promptText = `Z naší konverzace vytvoř technický návod. Výsledek mi vygeneruj STRICTNĚ jako jeden JSON array, který bude obsahovat jeden objekt s těmito přesnými klíči: "title" (krátký název), "desc" (popis problému), "category" (kategorie), "version" (např. v1.0) a "steps". Klíč "steps" bude array objektů, kde každý krok má klíče: "title" (název kroku), "content" (popis postupu s \\n pro odřádkování) a "code" (volitelný kód nebo tip). Nevypisuj žádný jiný text, pouze čistý JSON kód.`;
+            navigator.clipboard.writeText(promptText).then(() => {
+                window.showToast("Pokyn byl zkopírován. Vložte jej do chatu s AI.");
+            });
+        };
+
         window.openAiImport = () => {
             document.getElementById('aiImportOverlay').classList.remove('hidden');
         };
@@ -347,7 +342,6 @@
             setTimeout(() => { t.classList.replace('translate-y-0', 'translate-y-20'); t.classList.replace('opacity-100', 'opacity-0'); }, 3000);
         };
 
-        // Zobrazení databáze
         window.renderDatabaseList = () => {
             const searchVal = document.getElementById('dbSearch').value.toLowerCase();
             const container = document.getElementById('dbListContainer');
@@ -377,20 +371,18 @@
             });
         };
 
-        // Zástupné ("Stub") funkce pro případ, že se Firebase nenačte
+        // Zástupné funkce pro Offline mód
         window.saveToCloud = async () => { window.showToast("Aplikace běží v Offline módu. (Nelze ukládat)"); };
         window.loadFromCloud = (id) => { window.showToast("Aplikace běží v Offline módu."); };
         window.deleteFromCloud = async (id) => { window.showToast("Aplikace běží v Offline módu."); };
         window.processAiImport = async () => { window.showToast("Aplikace běží v Offline módu."); };
 
-        // Inicializace při prvním spuštění
         document.addEventListener('DOMContentLoaded', () => {
             window.clearForm();
         });
     </script>
 
 
-    <!-- FIREBASE SYNCHRONIZACE (Přepisuje základní funkce o cloudové volání) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -416,7 +408,6 @@
             auth = getAuth(app);
             db = getFirestore(app);
 
-            // Funkce, kterou volá UI po kliknutí na login, aby se log zapsal
             window.logLoginToCloud = async (name) => {
                 if(auth && auth.currentUser && db) {
                     try {
@@ -425,13 +416,12 @@
                             action: 'login',
                             timestamp: serverTimestamp()
                         });
-                    } catch(e) { console.warn("Log se nepodařilo zapsat do cloudu", e); }
+                    } catch(e) { console.warn("Log se nepodařilo zapsat", e); }
                 }
             };
 
-            // Přepsání ukládání reálnou Firebase logikou
             window.saveToCloud = async () => {
-                if (!auth || !auth.currentUser || !db) return window.showToast("Cloud není momentálně připojený.");
+                if (!auth || !auth.currentUser || !db) return window.showToast("Cloud není připojený.");
                 
                 const title = document.getElementById('docTitle').value;
                 if (!title) return window.showToast("Chyba: Návod musí mít název!");
@@ -459,7 +449,6 @@
                 }
             };
 
-            // Načtení reálnou Firebase logikou
             window.loadFromCloud = (id) => {
                 const documentData = window.cloudGuides.find(i => i.id === id);
                 if(!documentData) return;
@@ -482,7 +471,6 @@
                 window.showToast("Staženo z cloudu a připraveno k úpravě.");
             };
 
-            // Smazání reálnou Firebase logikou
             window.deleteFromCloud = async (id) => {
                 if(!auth || !auth.currentUser || !db) return;
                 if (confirm("Skutečně smazat tento návod VŠEM ve firmě?")) {
@@ -494,7 +482,7 @@
                 }
             };
 
-            // Zpracování importu od AI
+            // Zpracování AI Importu s automatickým dosazením jména
             window.processAiImport = async () => {
                 if (!auth || !auth.currentUser || !db) return window.showToast("Chyba: Nejste přihlášeni do cloudu.");
                 
@@ -507,12 +495,16 @@
                     
                     for (const guide of guides) {
                         const docId = 'guide_ai_' + Date.now() + Math.floor(Math.random() * 1000);
+                        
+                        // Zde aplikace ignoruje autora z AI a dosadí aktuálně přihlášeného člověka
+                        const finalAuthor = window.loggedInUserName ? `${window.loggedInUserName} / AI Gemini` : "AI Gemini";
+                        
                         const guideData = {
                             title: guide.title || "Importovaný návod od AI",
                             desc: guide.desc || "",
                             category: guide.category || "AI Import",
                             version: guide.version || "1.0",
-                            author: guide.author || window.loggedInUserName,
+                            author: finalAuthor,
                             steps: guide.steps || [],
                             updatedAt: serverTimestamp(),
                             lastEditor: window.loggedInUserName
@@ -521,14 +513,13 @@
                     }
                     
                     window.closeAiImport();
-                    window.showToast("Návody od AI byly nahrány do databáze!");
+                    window.showToast("Návody od AI byly úspěšně nahrány!");
                 } catch (error) {
                     console.error("Chyba importu AI", error);
                     alert("Nepodařilo se zpracovat kód. Zkontrolujte, zda jste ho zkopírovali správně celý od první do poslední závorky.");
                 }
             };
 
-            // Firebase Start a naslouchání
             const initAuth = async () => {
                 try {
                     await signInAnonymously(auth);
@@ -561,7 +552,7 @@
             });
             
         } catch(e) {
-            console.warn("Firebase databáze nepodporována v tomto prostředí (Offline režim).", e);
+            console.warn("Firebase nepodporována (Offline režim).", e);
             document.getElementById('cloudStatus').innerHTML = `<span class="text-amber-400">Offline Mód</span>`;
         }
     </script>
