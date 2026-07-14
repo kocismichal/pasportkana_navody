@@ -117,6 +117,11 @@
                         <label class="block text-xs text-slate-400 mb-1">Verze</label>
                         <input type="text" id="docVersion" oninput="window.updatePreview()" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white">
                     </div>
+                    <div class="col-span-2">
+                        <!-- Zde bylo chybějící políčko pro Autora! -->
+                        <label class="block text-xs text-slate-400 mb-1">Autor / Zpracoval</label>
+                        <input type="text" id="docAuthor" oninput="window.updatePreview()" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white">
+                    </div>
                 </div>
 
                 <div>
@@ -179,7 +184,7 @@
         </section>
     </main>
 
-    <!-- ZÁKLADNÍ LOGIKA APLIKACE (Funguje i bez cloudu a lokálně) -->
+    <!-- ZÁKLADNÍ LOGIKA APLIKACE -->
     <script>
         // Globální proměnné přístupné všude
         window.appSteps = [];
@@ -200,9 +205,12 @@
             }
             window.loggedInUserName = nameInput;
             document.getElementById('currentUserDisplay').innerText = nameInput;
-            document.getElementById('docAuthor').value = nameInput;
             
-            // Schováme překryv login obrazovky za všech okolností
+            // Zde to dříve padalo, protože ID docAuthor chybělo! Nyní je v pořádku zpět.
+            const authorInput = document.getElementById('docAuthor');
+            if(authorInput) authorInput.value = nameInput;
+            
+            // Schováme překryv login obrazovky
             document.getElementById('loginOverlay').style.display = 'none';
             window.updatePreview();
 
@@ -238,6 +246,7 @@
             document.getElementById('docDesc').value = "";
             document.getElementById('docCategory').value = "Interní";
             document.getElementById('docVersion').value = "v1.0";
+            if(document.getElementById('docAuthor')) document.getElementById('docAuthor').value = window.loggedInUserName || "Zadejte jméno...";
             document.getElementById('templateSelector').value = "custom";
             window.appSteps = [];
             window.renderStepsEditor();
@@ -287,7 +296,10 @@
             document.getElementById('pDesc').innerText = document.getElementById('docDesc').value || "...";
             document.getElementById('pCategory').innerText = document.getElementById('docCategory').value || "Kategorie";
             document.getElementById('pVersion').innerText = document.getElementById('docVersion').value || "1.0";
-            document.getElementById('pAuthor').innerText = document.getElementById('docAuthor').value || "Nezadáno";
+            
+            // Zde to dříve padalo, nyní funguje díky HTML políčku
+            const docAuthorElem = document.getElementById('docAuthor');
+            document.getElementById('pAuthor').innerText = (docAuthorElem && docAuthorElem.value) ? docAuthorElem.value : "Nezadáno";
             
             const today = new Date().toISOString().split('T')[0].split('-');
             document.getElementById('pDate').innerText = `${today[2]}/${today[1]}/${today[0]}`;
@@ -349,7 +361,6 @@
         // Inicializace při prvním spuštění
         document.addEventListener('DOMContentLoaded', () => {
             window.clearForm();
-            document.getElementById('docAuthor').value = "Zadejte jméno...";
         });
     </script>
 
@@ -433,7 +444,11 @@
                 document.getElementById('docDesc').value = documentData.desc || "";
                 document.getElementById('docCategory').value = documentData.category || "";
                 document.getElementById('docVersion').value = documentData.version || "1.0";
-                document.getElementById('docAuthor').value = documentData.author || "";
+                
+                if(document.getElementById('docAuthor')) {
+                    document.getElementById('docAuthor').value = documentData.author || "";
+                }
+                
                 window.appSteps = JSON.parse(JSON.stringify(documentData.steps || []));
                 
                 window.renderStepsEditor();
@@ -474,7 +489,10 @@
                             window.cloudGuides.push({ id: doc.id, ...doc.data() });
                         });
                         document.getElementById('cloudStatus').innerHTML = `● Živě synchronizováno`;
-                        document.getElementById('db-count').innerText = window.cloudGuides.length;
+                        
+                        const countElem = document.getElementById('db-count');
+                        if (countElem) countElem.innerText = window.cloudGuides.length;
+                        
                         window.renderDatabaseList();
                     }, (error) => {
                         console.error("Chyba čtení databáze:", error);
